@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리의 서재 — 북클럽 아카이브</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --wood-dark:#3B2A20;
+    --wood:#5A3E2B;
+    --wood-light:#7A5738;
+    --gold:#C9A24B;
+    --sage:#5C7A5E;
+    --paper:#F3EBDA;
+    --paper-dark:#E8DCC4;
+    --ink:#241F19;
+    --ink-soft:#5B5348;
+    --danger:#9C4A3C;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'Noto Sans KR',sans-serif; min-height:100vh;}
+  .app{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+  header{background:linear-gradient(180deg,var(--wood-dark),var(--wood) 90%); padding:46px 20px 60px; margin:0 0 -34px 0; position:relative; overflow:hidden;}
+  header::after{content:""; position:absolute; left:0; right:0; bottom:0; height:14px; background:linear-gradient(180deg,rgba(0,0,0,.25),transparent);}
+  .header-inner{max-width:1040px;margin:0 auto;position:relative;z-index:2;}
+  .eyebrow{font-size:13px; letter-spacing:.16em; color:var(--gold); text-transform:uppercase; font-weight:700; margin:0 0 10px;}
+  h1{font-family:'Noto Serif KR',serif; font-weight:900; font-size:clamp(32px,5vw,48px); color:var(--paper); margin:0 0 12px; letter-spacing:-.01em;}
+  .sub{color:#D9C9A8; font-size:15px; max-width:520px; line-height:1.6; margin:0;}
+  .stat-row{display:flex; gap:28px; margin-top:26px; flex-wrap:wrap;}
+  .stat{color:var(--paper);}
+  .stat b{font-family:'Noto Serif KR',serif; font-size:26px; color:var(--gold); display:block;}
+  .stat span{font-size:12px; color:#C9BBA0;}
+  .panel{background:#fff; border-radius:var(--radius); box-shadow:0 1px 2px rgba(36,31,25,.06), 0 8px 24px rgba(36,31,25,.08); position:relative; z-index:3;}
+  .add-panel{padding:26px; margin-bottom:34px;}
+  .add-panel h2{font-family:'Noto Serif KR',serif; font-size:20px; margin:0 0 4px;}
+  .add-panel .hint{color:var(--ink-soft); font-size:13px; margin:0 0 18px;}
+  .search-row{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  input[type=text], input[type=search], textarea{font-family:'Noto Sans KR',sans-serif; border:1.5px solid var(--paper-dark); border-radius:8px; padding:11px 13px; font-size:14.5px; color:var(--ink); background:#FCFAF4; width:100%;}
+  input:focus, textarea:focus{outline:2px solid var(--sage); outline-offset:1px; border-color:var(--sage);}
+  button{font-family:'Noto Sans KR',sans-serif; cursor:pointer; border:none; border-radius:8px; font-weight:700; font-size:14px; padding:11px 18px; transition:transform .12s ease, opacity .12s ease;}
+  button:active{transform:scale(.97);}
+  .btn-primary{background:var(--wood); color:var(--paper);}
+  .btn-primary:hover{background:var(--wood-light);}
+  .btn-primary:disabled{opacity:.45; cursor:not-allowed;}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border:1.5px solid var(--paper-dark);}
+  .btn-ghost:hover{background:var(--paper);}
+  .search-results{display:flex; flex-direction:column; gap:8px; margin-bottom:8px; max-height:280px; overflow-y:auto;}
+  .search-item{display:flex; gap:12px; padding:9px; border-radius:8px; cursor:pointer; align-items:center; border:1.5px solid transparent;}
+  .search-item:hover{background:var(--paper);}
+  .search-item img{width:36px; height:52px; object-fit:cover; border-radius:3px; background:var(--paper-dark); flex-shrink:0;}
+  .search-item .meta b{font-size:13.5px; display:block; line-height:1.3;}
+  .search-item .meta span{font-size:12px; color:var(--ink-soft);}
+  .picked-book{display:flex; gap:14px; align-items:center; background:var(--paper); border-radius:8px; padding:12px; margin-bottom:16px;}
+  .picked-book img{width:46px; height:66px; object-fit:cover; border-radius:4px;}
+  .picked-book .meta b{display:block; font-size:14.5px;}
+  .picked-book .meta span{font-size:12.5px; color:var(--ink-soft);}
+  .picked-book button{margin-left:auto;}
+  .field-row{display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap;}
+  .field{flex:1; min-width:160px;}
+  .field label{font-size:12.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .stars{display:flex; gap:4px; font-size:26px;}
+  .stars span{cursor:pointer; color:var(--paper-dark); transition:color .1s;}
+  .stars span.on{color:var(--gold);}
+  textarea{min-height:80px; resize:vertical; line-height:1.5;}
+  .tabs{display:flex; gap:6px; margin:0 0 20px;}
+  .tab{padding:9px 16px; border-radius:20px; font-size:13.5px; font-weight:700; background:transparent; color:var(--ink-soft); border:1.5px solid var(--paper-dark);}
+  .tab.active{background:var(--wood); color:var(--paper); border-color:var(--wood);}
+  .shelf-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:20px 16px;}
+  .shelf-book{cursor:pointer;}
+  .shelf-cover{width:100%; aspect-ratio:2/3; border-radius:6px; overflow:hidden; background:var(--paper-dark); box-shadow:0 6px 14px rgba(36,31,25,.18); position:relative; margin-bottom:8px; transition:transform .15s ease;}
+  .shelf-book:hover .shelf-cover{transform:translateY(-4px);}
+  .shelf-cover img{width:100%; height:100%; object-fit:cover; display:block;}
+  .shelf-cover .no-cover{display:flex; align-items:center; justify-content:center; height:100%; font-family:'Noto Serif KR',serif; font-size:12px; color:var(--ink-soft); padding:8px; text-align:center;}
+  .shelf-cover .count-badge{position:absolute; top:6px; right:6px; background:var(--wood-dark); color:var(--gold); font-size:11px; font-weight:700; padding:2px 7px; border-radius:10px;}
+  .shelf-title{font-size:13px; font-weight:700; line-height:1.35; margin:0 0 2px;}
+  .shelf-author{font-size:11.5px; color:var(--ink-soft); margin:0 0 4px;}
+  .shelf-rating{font-size:12px; color:var(--gold); font-weight:700;}
+  .feed-item{padding:20px 0; border-bottom:1px solid var(--paper-dark); display:flex; gap:16px;}
+  .feed-item:last-child{border-bottom:none;}
+  .feed-cover{width:56px; height:80px; border-radius:5px; object-fit:cover; background:var(--paper-dark); flex-shrink:0;}
+  .feed-body{flex:1; min-width:0;}
+  .feed-top{display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap;}
+  .feed-title{font-family:'Noto Serif KR',serif; font-weight:700; font-size:16px; margin:0;}
+  .feed-author{font-size:12.5px; color:var(--ink-soft); margin:2px 0 6px;}
+  .feed-reviewer{font-size:12.5px; color:var(--sage); font-weight:700;}
+  .feed-date{font-size:11.5px; color:#A79A80;}
+  .feed-stars{color:var(--gold); font-size:14px; margin:4px 0 6px;}
+  .feed-review{font-size:14px; line-height:1.65; color:#3A342B; white-space:pre-wrap;}
+  .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
+  .empty b{display:block; font-family:'Noto Serif KR',serif; font-size:18px; color:var(--ink); margin-bottom:6px;}
+  .modal-back{position:fixed; inset:0; background:rgba(36,31,25,.55); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal-back.open{display:flex;}
+  .modal{background:#fff; border-radius:14px; max-width:560px; width:100%; max-height:82vh; overflow-y:auto; padding:26px;}
+  .modal-head{display:flex; gap:16px; margin-bottom:18px;}
+  .modal-head img{width:70px; height:100px; object-fit:cover; border-radius:6px; background:var(--paper-dark);}
+  .modal-head h3{font-family:'Noto Serif KR',serif; font-size:20px; margin:0 0 4px;}
+  .modal-head p{font-size:13px; color:var(--ink-soft); margin:0 0 6px;}
+  .modal-avg{color:var(--gold); font-weight:700; font-size:14px;}
+  .modal-close{margin-left:auto; align-self:flex-start;}
+  .modal-review{padding:14px 0; border-top:1px solid var(--paper-dark);}
+  .modal-review:first-of-type{border-top:none;}
+  .mr-top{display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;}
+  .mr-top b{color:var(--sage);}
+  .mr-stars{color:var(--gold); font-size:12.5px; margin-bottom:4px;}
+  .mr-text{font-size:13.5px; line-height:1.6; white-space:pre-wrap;}
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--wood-dark); color:var(--paper); padding:12px 22px; border-radius:8px; font-size:13.5px; opacity:0; transition:all .25s ease; z-index:60; pointer-events:none;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  @media (max-width:520px){ .field-row{flex-direction:column;} header{padding:36px 16px 54px;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <p class="eyebrow">Book Club Archive</p>
+    <h1>우리의 서재</h1>
+    <p class="sub">매달 한 번, 스쳐 지나가던 책 소개를 여기에 쌓아둡니다. 내가 읽은 책, 별점, 한 줄 이상의 생각을 남기고 서로의 서재를 구경하세요.</p>
+    <div class="stat-row" id="statRow"></div>
+  </div>
+</header>
+
+<div class="app">
+
+  <div class="panel add-panel">
+    <h2>새 책 기록하기</h2>
+    <p class="hint">제목으로 검색해서 책을 고른 뒤, 별점과 리뷰를 남겨주세요.</p>
+
+    <div class="search-row">
+      <input type="search" id="searchInput" placeholder="책 제목이나 저자를 검색해보세요 (예: 아몬드)">
+      <button class="btn-primary" id="searchBtn">검색</button>
+      <button class="btn-ghost" id="manualToggleBtn">직접 입력</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+
+    <div id="manualBox" style="display:none; background:var(--paper); border-radius:8px; padding:14px; margin-bottom:14px;">
+      <div class="field-row" style="margin-bottom:10px;">
+        <div class="field">
+          <label for="manualTitle">책 제목</label>
+          <input type="text" id="manualTitle" placeholder="예: 아몬드">
+        </div>
+        <div class="field">
+          <label for="manualAuthor">저자</label>
+          <input type="text" id="manualAuthor" placeholder="예: 손원평">
+        </div>
+      </div>
+      <button class="btn-primary" id="manualPickBtn">이 책으로 선택</button>
+    </div>
+
+    <div id="pickedBookBox"></div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="nameInput">내 이름</label>
+        <input type="text" id="nameInput" placeholder="예: 지은">
+      </div>
+      <div class="field">
+        <label>별점</label>
+        <div class="stars" id="starPicker">
+          <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+        </div>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:14px;">
+      <label for="reviewInput">리뷰</label>
+      <textarea id="reviewInput" placeholder="이 책에 대해 하고 싶은 이야기를 남겨주세요."></textarea>
+    </div>
+    <button class="btn-primary" id="submitBtn" disabled>서재에 기록하기</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="shelf">📚 책장</button>
+    <button class="tab" data-tab="feed">🕒 최신 피드</button>
+  </div>
+
+  <div id="shelfView"></div>
+  <div id="feedView" style="display:none;"></div>
+
+</div>
+
+<div class="modal-back" id="modalBack">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================
+   여기 두 줄만 Supabase 값으로 바꿔주세요.
+   Supabase 대시보드 > Settings > API 에서 확인할 수 있어요.
+====================================================== */
+const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+/* ====================================================== */
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
+
+let entries = [];
+let pickedBook = null;
+let starValue = 0;
+
+function showToast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ---------- Supabase 데이터 ----------
+async function loadEntries(){
+  const { data, error } = await supabase.from('entries').select('*').order('created_at', { ascending:false });
+  if(error){ showToast('불러오기에 실패했어요.'); console.error(error); return; }
+  entries = data || [];
+  render();
+}
+
+async function insertEntry(entry){
+  const { error } = await supabase.from('entries').insert([entry]);
+  if(error){ showToast('저장에 실패했어요.'); console.error(error); return false; }
+  return true;
+}
+
+function loadMyName(){
+  const n = localStorage.getItem('bookclub-my-name');
+  if(n) $('#nameInput').value = n;
+}
+function saveMyName(name){
+  localStorage.setItem('bookclub-my-name', name);
+}
+
+// ---------- 책 검색 (서버 프록시 /api/search-book 호출) ----------
+$('#searchInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') runSearch(); });
+$('#searchBtn').addEventListener('click', runSearch);
+
+async function runSearch(){
+  const q = $('#searchInput').value.trim();
+  const box = $('#searchResults');
+  if(!q){ box.innerHTML=''; return; }
+  box.innerHTML = '<p style="font-size:13px;color:var(--ink-soft);padding:6px;">검색 중...</p>';
+  try{
+    const res = await fetch('/api/search-book?q=' + encodeURIComponent(q));
+    const data = await res.json();
+    const items = data.items || [];
+    if(items.length===0){
+      box.innerHTML = '<p style="font-size:13px;color:var(--ink-soft);padding:6px;">검색 결과가 없어요. "직접 입력"을 이용해주세요.</p>';
+      return;
+    }
+    box.innerHTML = '';
+    items.forEach(it=>{
+      const div = document.createElement('div');
+      div.className = 'search-item';
+      div.innerHTML = `
+        ${it.thumbnail ? `<img src="${it.thumbnail}">` : `<div style="width:36px;height:52px;background:var(--paper-dark);border-radius:3px;flex-shrink:0;"></div>`}
+        <div class="meta">
+          <b>${escapeHtml(it.title)}</b>
+          <span>${escapeHtml(it.author||'저자 미상')}</span>
+        </div>`;
+      div.addEventListener('click', ()=>pickBook(it.title, it.author, it.thumbnail));
+      box.appendChild(div);
+    });
+  }catch(e){
+    box.innerHTML = '<p style="font-size:13px;color:var(--danger);padding:6px;">검색 중 오류가 발생했어요. "직접 입력"으로 책을 추가해주세요.</p>';
+  }
+}
+
+function pickBook(title, author, thumbnail){
+  pickedBook = { title: title || '제목 없음', author: author || '저자 미상', thumbnail: thumbnail || '' };
+  $('#searchResults').innerHTML = '';
+  $('#searchInput').value = '';
+  renderPickedBook();
+  updateSubmitState();
+}
+
+function renderPickedBook(){
+  const box = $('#pickedBookBox');
+  if(!pickedBook){ box.innerHTML=''; return; }
+  box.innerHTML = `
+    <div class="picked-book">
+      ${pickedBook.thumbnail ? `<img src="${pickedBook.thumbnail}">` : `<div style="width:46px;height:66px;background:var(--paper-dark);border-radius:4px;"></div>`}
+      <div class="meta">
+        <b>${escapeHtml(pickedBook.title)}</b>
+        <span>${escapeHtml(pickedBook.author)}</span>
+      </div>
+      <button class="btn-ghost" id="clearPicked">다시 선택</button>
+    </div>`;
+  $('#clearPicked').addEventListener('click', ()=>{ pickedBook=null; renderPickedBook(); updateSubmitState(); });
+}
+
+// ---------- 직접 입력 ----------
+$('#manualToggleBtn').addEventListener('click', ()=>{
+  const box = $('#manualBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+});
+$('#manualPickBtn').addEventListener('click', ()=>{
+  const title = $('#manualTitle').value.trim();
+  const author = $('#manualAuthor').value.trim();
+  if(!title){ showToast('책 제목을 입력해주세요.'); return; }
+  pickBook(title, author || '저자 미상', '');
+  $('#manualTitle').value=''; $('#manualAuthor').value='';
+  $('#manualBox').style.display='none';
+});
+
+// ---------- 별점 ----------
+$$('#starPicker span').forEach(s=>{
+  s.addEventListener('click', ()=>{
+    starValue = parseInt(s.dataset.v);
+    $$('#starPicker span').forEach(el=>el.classList.toggle('on', parseInt(el.dataset.v) <= starValue));
+    updateSubmitState();
+  });
+});
+
+// ---------- 제출 ----------
+$('#nameInput').addEventListener('input', updateSubmitState);
+$('#reviewInput').addEventListener('input', updateSubmitState);
+
+function updateSubmitState(){
+  const ok = pickedBook && $('#nameInput').value.trim() && starValue>0 && $('#reviewInput').value.trim();
+  $('#submitBtn').disabled = !ok;
+}
+
+$('#submitBtn').addEventListener('click', async ()=>{
+  const name = $('#nameInput').value.trim();
+  const review = $('#reviewInput').value.trim();
+  if(!pickedBook || !name || !starValue || !review) return;
+
+  $('#submitBtn').disabled = true;
+  $('#submitBtn').textContent = '저장 중...';
+
+  const entry = {
+    title: pickedBook.title,
+    author: pickedBook.author,
+    thumbnail: pickedBook.thumbnail,
+    reviewer: name,
+    rating: starValue,
+    review: review
+  };
+
+  const ok = await insertEntry(entry);
+
+  pickedBook = null; starValue = 0;
+  $('#reviewInput').value = '';
+  $$('#starPicker span').forEach(el=>el.classList.remove('on'));
+  renderPickedBook();
+  $('#submitBtn').textContent = '서재에 기록하기';
+  updateSubmitState();
+
+  if(ok){
+    saveMyName(name);
+    showToast('서재에 기록했어요 📖');
+    loadEntries();
+  }
+});
+
+// ---------- 탭 ----------
+$$('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    $$('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const tab = t.dataset.tab;
+    $('#shelfView').style.display = tab==='shelf' ? 'block':'none';
+    $('#feedView').style.display = tab==='feed' ? 'block':'none';
+  });
+});
+
+// ---------- 렌더 ----------
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function groupByBook(){
+  const map = new Map();
+  entries.forEach(e=>{
+    const key = e.title.trim().toLowerCase()+'|'+(e.author||'').trim().toLowerCase();
+    if(!map.has(key)) map.set(key, {title:e.title, author:e.author, thumbnail:e.thumbnail, reviews:[]});
+    map.get(key).reviews.push(e);
+  });
+  return Array.from(map.values());
+}
+
+function render(){ renderStats(); renderShelf(); renderFeed(); }
+
+function renderStats(){
+  const books = groupByBook();
+  const reviewers = new Set(entries.map(e=>e.reviewer));
+  const avg = entries.length ? (entries.reduce((s,e)=>s+e.rating,0)/entries.length).toFixed(1) : '–';
+  $('#statRow').innerHTML = `
+    <div class="stat"><b>${books.length}</b><span>기록된 책</span></div>
+    <div class="stat"><b>${entries.length}</b><span>남긴 리뷰</span></div>
+    <div class="stat"><b>${reviewers.size}</b><span>참여 멤버</span></div>
+    <div class="stat"><b>${avg}</b><span>평균 별점</span></div>
+  `;
+}
+
+function renderShelf(){
+  const el = $('#shelfView');
+  const books = groupByBook().sort((a,b)=> b.reviews.length - a.reviews.length || a.title.localeCompare(b.title));
+  if(books.length===0){
+    el.innerHTML = `<div class="panel empty"><b>아직 기록된 책이 없어요</b>위에서 첫 책을 검색해 기록해보세요.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="shelf-grid">${books.map(b=>{
+    const avg = (b.reviews.reduce((s,r)=>s+r.rating,0)/b.reviews.length).toFixed(1);
+    return `
+      <div class="shelf-book" data-key="${escapeHtml(b.title)}|${escapeHtml(b.author||'')}">
+        <div class="shelf-cover">
+          ${b.thumbnail ? `<img src="${b.thumbnail}">` : `<div class="no-cover">${escapeHtml(b.title)}</div>`}
+          <div class="count-badge">${b.reviews.length}명</div>
+        </div>
+        <p class="shelf-title">${escapeHtml(b.title)}</p>
+        <p class="shelf-author">${escapeHtml(b.author||'')}</p>
+        <p class="shelf-rating">★ ${avg}</p>
+      </div>`;
+  }).join('')}</div>`;
+
+  $$('.shelf-book', el).forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const [title, author] = card.dataset.key.split('|');
+      openBookModal(title, author);
+    });
+  });
+}
+
+function renderFeed(){
+  const el = $('#feedView');
+  const sorted = [...entries].sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+  if(sorted.length===0){
+    el.innerHTML = `<div class="panel empty"><b>아직 남겨진 리뷰가 없어요</b>첫 리뷰를 남겨 서재를 채워보세요.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="panel" style="padding:6px 24px;">${sorted.map(e=>{
+    const d = new Date(e.created_at);
+    const dateStr = `${d.getMonth()+1}월 ${d.getDate()}일`;
+    return `
+      <div class="feed-item">
+        ${e.thumbnail ? `<img class="feed-cover" src="${e.thumbnail}">` : `<div class="feed-cover"></div>`}
+        <div class="feed-body">
+          <div class="feed-top">
+            <p class="feed-title">${escapeHtml(e.title)}</p>
+            <span class="feed-date">${dateStr}</span>
+          </div>
+          <p class="feed-author">${escapeHtml(e.author||'')}</p>
+          <p class="feed-reviewer">${escapeHtml(e.reviewer)}</p>
+          <p class="feed-stars">${'★'.repeat(e.rating)}${'☆'.repeat(5-e.rating)}</p>
+          <p class="feed-review">${escapeHtml(e.review)}</p>
+        </div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+function openBookModal(title, author){
+  const related = entries.filter(e=>e.title.trim().toLowerCase()===title.trim().toLowerCase() && (e.author||'').trim().toLowerCase()===author.trim().toLowerCase());
+  if(related.length===0) return;
+  const avg = (related.reduce((s,r)=>s+r.rating,0)/related.length).toFixed(1);
+  const thumb = related[0].thumbnail;
+  $('#modalContent').innerHTML = `
+    <div class="modal-head">
+      ${thumb ? `<img src="${thumb}">` : `<div style="width:70px;height:100px;background:var(--paper-dark);border-radius:6px;"></div>`}
+      <div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(author)}</p>
+        <p class="modal-avg">★ ${avg} · 리뷰 ${related.length}개</p>
+      </div>
+      <button class="btn-ghost modal-close" id="closeModal">닫기</button>
+    </div>
+    <div>${related.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(r=>`
+      <div class="modal-review">
+        <div class="mr-top"><b>${escapeHtml(r.reviewer)}</b><span>${new Date(r.created_at).getMonth()+1}월 ${new Date(r.created_at).getDate()}일</span></div>
+        <div class="mr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        <div class="mr-text">${escapeHtml(r.review)}</div>
+      </div>`).join('')}
+    </div>
+  `;
+  $('#modalBack').classList.add('open');
+  $('#closeModal').addEventListener('click', closeModal);
+}
+function closeModal(){ $('#modalBack').classList.remove('open'); }
+$('#modalBack').addEventListener('click', (e)=>{ if(e.target.id==='modalBack') closeModal(); });
+
+// ---------- 시작 ----------
+loadMyName();
+loadEntries();
+</script>
+
+</body>
+</html>
