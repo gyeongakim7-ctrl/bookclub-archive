@@ -41,3 +41,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: '검색 중 오류가 발생했어요.', detail: String(e) });
   }
 }
+// v2 
