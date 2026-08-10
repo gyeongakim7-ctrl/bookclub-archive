@@ -1,124 +1,133 @@
-xoexagijjqyzcxfwyvpw
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>우리의 서재 — 북클럽 아카이브</title>
+<title>대북클럽</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --wood-dark:#3B2A20;
-    --wood:#5A3E2B;
-    --wood-light:#7A5738;
-    --gold:#C9A24B;
-    --sage:#5C7A5E;
-    --paper:#F3EBDA;
-    --paper-dark:#E8DCC4;
-    --ink:#241F19;
-    --ink-soft:#5B5348;
-    --danger:#9C4A3C;
-    --radius:10px;
+    --coral:#FF8FA3;
+    --coral-dark:#FF6B85;
+    --peach:#FFC9A8;
+    --lavender:#B9AEEA;
+    --mint:#7FDDC4;
+    --gold:#FFB13D;
+    --paper:#FFFFFF;
+    --paper-dark:#FFE7E0;
+    --bg:#FFF8F3;
+    --ink:#3A2E2A;
+    --ink-soft:#9A897F;
+    --danger:#E5675A;
+    --radius:20px;
   }
   *{box-sizing:border-box;}
-  body{margin:0; background:var(--paper); color:var(--ink); font-family:'Noto Sans KR',sans-serif; min-height:100vh;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Noto Sans KR',sans-serif; min-height:100vh;}
   .app{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
-  header{background:linear-gradient(180deg,var(--wood-dark),var(--wood) 90%); padding:46px 20px 60px; margin:0 0 -34px 0; position:relative; overflow:hidden;}
-  header::after{content:""; position:absolute; left:0; right:0; bottom:0; height:14px; background:linear-gradient(180deg,rgba(0,0,0,.25),transparent);}
+  header{background:linear-gradient(135deg,#FFD9E2 0%,#FFE7D2 55%,#FFF4E4 100%); padding:50px 20px 64px; margin:0 0 -34px 0; position:relative; overflow:hidden; border-radius:0 0 36px 36px;}
+  header::before{content:""; position:absolute; top:-70px; right:-60px; width:240px; height:240px; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.65),rgba(255,255,255,0) 70%);}
+  header::after{content:""; position:absolute; bottom:-90px; left:-50px; width:260px; height:260px; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.4),rgba(255,255,255,0) 70%);}
   .header-inner{max-width:1040px;margin:0 auto;position:relative;z-index:2;}
-  .eyebrow{font-size:13px; letter-spacing:.16em; color:var(--gold); text-transform:uppercase; font-weight:700; margin:0 0 10px;}
-  h1{font-family:'Noto Serif KR',serif; font-weight:900; font-size:clamp(32px,5vw,48px); color:var(--paper); margin:0 0 12px; letter-spacing:-.01em;}
-  .sub{color:#D9C9A8; font-size:15px; max-width:520px; line-height:1.6; margin:0;}
+  .eyebrow{font-size:13px; letter-spacing:.16em; color:var(--coral-dark); text-transform:uppercase; font-weight:800; margin:0 0 10px;}
+  h1{font-family:'Noto Sans KR',sans-serif; font-weight:900; font-size:clamp(34px,5vw,50px); color:var(--ink); margin:0 0 12px; letter-spacing:-.02em;}
+  .sub{color:#8A6F63; font-size:15px; max-width:520px; line-height:1.6; margin:0;}
   .stat-row{display:flex; gap:28px; margin-top:26px; flex-wrap:wrap;}
-  .stat{color:var(--paper);}
-  .stat b{font-family:'Noto Serif KR',serif; font-size:26px; color:var(--gold); display:block;}
-  .stat span{font-size:12px; color:#C9BBA0;}
-  .panel{background:#fff; border-radius:var(--radius); box-shadow:0 1px 2px rgba(36,31,25,.06), 0 8px 24px rgba(36,31,25,.08); position:relative; z-index:3;}
-  .add-panel{padding:26px; margin-bottom:34px;}
-  .add-panel h2{font-family:'Noto Serif KR',serif; font-size:20px; margin:0 0 4px;}
+  .stat{color:var(--ink);}
+  .stat b{font-family:'Noto Sans KR',sans-serif; font-weight:900; font-size:26px; color:var(--coral-dark); display:block;}
+  .stat span{font-size:12px; color:#9A7E70;}
+  .panel{background:var(--paper); border-radius:var(--radius); box-shadow:0 2px 8px rgba(255,143,163,.08), 0 14px 30px rgba(255,143,163,.14); border:1.5px solid #FFEFEA; position:relative; z-index:3;}
+  .add-panel{padding:28px; margin-bottom:34px;}
+  .add-panel h2{font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:20px; margin:0 0 4px; color:var(--ink);}
   .add-panel .hint{color:var(--ink-soft); font-size:13px; margin:0 0 18px;}
   .search-row{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
-  input[type=text], input[type=search], textarea{font-family:'Noto Sans KR',sans-serif; border:1.5px solid var(--paper-dark); border-radius:8px; padding:11px 13px; font-size:14.5px; color:var(--ink); background:#FCFAF4; width:100%;}
-  input:focus, textarea:focus{outline:2px solid var(--sage); outline-offset:1px; border-color:var(--sage);}
-  button{font-family:'Noto Sans KR',sans-serif; cursor:pointer; border:none; border-radius:8px; font-weight:700; font-size:14px; padding:11px 18px; transition:transform .12s ease, opacity .12s ease;}
-  button:active{transform:scale(.97);}
-  .btn-primary{background:var(--wood); color:var(--paper);}
-  .btn-primary:hover{background:var(--wood-light);}
-  .btn-primary:disabled{opacity:.45; cursor:not-allowed;}
-  .btn-ghost{background:transparent; color:var(--ink-soft); border:1.5px solid var(--paper-dark);}
-  .btn-ghost:hover{background:var(--paper);}
+  input[type=text], input[type=search], textarea{font-family:'Noto Sans KR',sans-serif; border:1.5px solid var(--paper-dark); border-radius:14px; padding:12px 14px; font-size:14.5px; color:var(--ink); background:#FFFBF8; width:100%;}
+  input:focus, textarea:focus{outline:2px solid var(--coral); outline-offset:1px; border-color:var(--coral);}
+  button{font-family:'Noto Sans KR',sans-serif; cursor:pointer; border:none; border-radius:999px; font-weight:800; font-size:14px; padding:11px 20px; transition:transform .12s ease, opacity .12s ease, box-shadow .12s ease;}
+  button:active{transform:scale(.96);}
+  .btn-primary{background:linear-gradient(135deg,var(--coral),var(--coral-dark)); color:#fff; box-shadow:0 6px 16px rgba(255,107,133,.32);}
+  .btn-primary:hover{transform:translateY(-1px); box-shadow:0 8px 20px rgba(255,107,133,.4);}
+  .btn-primary:disabled{opacity:.4; cursor:not-allowed; box-shadow:none; transform:none;}
+  .btn-ghost{background:#fff; color:var(--coral-dark); border:1.5px solid var(--paper-dark);}
+  .btn-ghost:hover{background:#FFF3EF;}
   .search-results{display:flex; flex-direction:column; gap:8px; margin-bottom:8px; max-height:280px; overflow-y:auto;}
-  .search-item{display:flex; gap:12px; padding:9px; border-radius:8px; cursor:pointer; align-items:center; border:1.5px solid transparent;}
-  .search-item:hover{background:var(--paper);}
-  .search-item img{width:36px; height:52px; object-fit:cover; border-radius:3px; background:var(--paper-dark); flex-shrink:0;}
+  .search-item{display:flex; gap:12px; padding:9px; border-radius:14px; cursor:pointer; align-items:center; border:1.5px solid transparent;}
+  .search-item:hover{background:#FFF3EF; border-color:var(--paper-dark);}
+  .search-item img{width:36px; height:52px; object-fit:cover; border-radius:8px; background:var(--paper-dark); flex-shrink:0;}
   .search-item .meta b{font-size:13.5px; display:block; line-height:1.3;}
   .search-item .meta span{font-size:12px; color:var(--ink-soft);}
-  .picked-book{display:flex; gap:14px; align-items:center; background:var(--paper); border-radius:8px; padding:12px; margin-bottom:16px;}
-  .picked-book img{width:46px; height:66px; object-fit:cover; border-radius:4px;}
+  .picked-book{display:flex; gap:14px; align-items:center; background:#FFF3EF; border-radius:16px; padding:12px; margin-bottom:16px;}
+  .picked-book img{width:46px; height:66px; object-fit:cover; border-radius:10px;}
   .picked-book .meta b{display:block; font-size:14.5px;}
   .picked-book .meta span{font-size:12.5px; color:var(--ink-soft);}
   .picked-book button{margin-left:auto;}
   .field-row{display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap;}
   .field{flex:1; min-width:160px;}
-  .field label{font-size:12.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:6px;}
-  .stars{display:flex; gap:4px; font-size:26px;}
-  .stars span{cursor:pointer; color:var(--paper-dark); transition:color .1s;}
+  .field label{font-size:12.5px; font-weight:800; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .stars{display:flex; gap:4px; font-size:28px;}
+  .stars span{cursor:pointer; color:#FFE3CC; transition:color .1s, transform .1s;}
+  .stars span:hover{transform:scale(1.15);}
   .stars span.on{color:var(--gold);}
   textarea{min-height:80px; resize:vertical; line-height:1.5;}
-  .tabs{display:flex; gap:6px; margin:0 0 20px;}
-  .tab{padding:9px 16px; border-radius:20px; font-size:13.5px; font-weight:700; background:transparent; color:var(--ink-soft); border:1.5px solid var(--paper-dark);}
-  .tab.active{background:var(--wood); color:var(--paper); border-color:var(--wood);}
+  .tabs{display:flex; gap:8px; margin:0 0 20px;}
+  .tab{padding:9px 18px; border-radius:999px; font-size:13.5px; font-weight:800; background:#fff; color:var(--ink-soft); border:1.5px solid var(--paper-dark);}
+  .tab.active{background:linear-gradient(135deg,var(--coral),var(--coral-dark)); color:#fff; border-color:transparent;}
+  .year-group{margin-bottom:32px;}
+  .year-group:last-child{margin-bottom:0;}
+  .year-title{font-family:'Noto Sans KR',sans-serif; font-weight:900; font-size:17px; color:var(--coral-dark); margin:0 0 14px; display:flex; align-items:center; gap:10px;}
+  .year-title::after{content:""; flex:1; height:1px; background:var(--paper-dark);}
   .shelf-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:20px 16px;}
   .shelf-book{cursor:pointer;}
-  .shelf-cover{width:100%; aspect-ratio:2/3; border-radius:6px; overflow:hidden; background:var(--paper-dark); box-shadow:0 6px 14px rgba(36,31,25,.18); position:relative; margin-bottom:8px; transition:transform .15s ease;}
-  .shelf-book:hover .shelf-cover{transform:translateY(-4px);}
+  .shelf-cover{width:100%; aspect-ratio:2/3; border-radius:16px; overflow:hidden; background:var(--paper-dark); box-shadow:0 8px 18px rgba(255,143,163,.2); position:relative; margin-bottom:8px; transition:transform .15s ease;}
+  .shelf-book:hover .shelf-cover{transform:translateY(-4px) rotate(-1deg);}
   .shelf-cover img{width:100%; height:100%; object-fit:cover; display:block;}
-  .shelf-cover .no-cover{display:flex; align-items:center; justify-content:center; height:100%; font-family:'Noto Serif KR',serif; font-size:12px; color:var(--ink-soft); padding:8px; text-align:center;}
-  .shelf-cover .count-badge{position:absolute; top:6px; right:6px; background:var(--wood-dark); color:var(--gold); font-size:11px; font-weight:700; padding:2px 7px; border-radius:10px;}
+  .shelf-cover .no-cover{display:flex; align-items:center; justify-content:center; height:100%; font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:12px; color:var(--ink-soft); padding:8px; text-align:center; background:linear-gradient(135deg,#FFE7D2,#FFD9E2);}
+  .shelf-cover .count-badge{position:absolute; top:6px; right:6px; background:var(--coral-dark); color:#fff; font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px;}
   .shelf-title{font-size:13px; font-weight:700; line-height:1.35; margin:0 0 2px;}
   .shelf-author{font-size:11.5px; color:var(--ink-soft); margin:0 0 4px;}
-  .shelf-rating{font-size:12px; color:var(--gold); font-weight:700;}
+  .shelf-rating{font-size:12px; color:var(--gold); font-weight:800;}
   .feed-item{padding:20px 0; border-bottom:1px solid var(--paper-dark); display:flex; gap:16px;}
   .feed-item:last-child{border-bottom:none;}
-  .feed-cover{width:56px; height:80px; border-radius:5px; object-fit:cover; background:var(--paper-dark); flex-shrink:0;}
+  .feed-cover{width:56px; height:80px; border-radius:12px; object-fit:cover; background:var(--paper-dark); flex-shrink:0;}
   .feed-body{flex:1; min-width:0;}
   .feed-top{display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap;}
-  .feed-title{font-family:'Noto Serif KR',serif; font-weight:700; font-size:16px; margin:0;}
+  .feed-title{font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:16px; margin:0; color:var(--ink);}
   .feed-author{font-size:12.5px; color:var(--ink-soft); margin:2px 0 6px;}
-  .feed-reviewer{font-size:12.5px; color:var(--sage); font-weight:700;}
-  .feed-date{font-size:11.5px; color:#A79A80;}
+  .feed-reviewer{font-size:12.5px; color:#7C6FD8; font-weight:800;}
+  .reviewer-link{cursor:pointer;}
+  .reviewer-link:hover{text-decoration:underline;}
+  .feed-date{font-size:11.5px; color:#C2A99C;}
   .feed-stars{color:var(--gold); font-size:14px; margin:4px 0 6px;}
-  .feed-review{font-size:14px; line-height:1.65; color:#3A342B; white-space:pre-wrap;}
+  .feed-review{font-size:14px; line-height:1.65; color:#4A3D36; white-space:pre-wrap;}
   .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
-  .empty b{display:block; font-family:'Noto Serif KR',serif; font-size:18px; color:var(--ink); margin-bottom:6px;}
-  .modal-back{position:fixed; inset:0; background:rgba(36,31,25,.55); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .empty b{display:block; font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:18px; color:var(--ink); margin-bottom:6px;}
+  .modal-back{position:fixed; inset:0; background:rgba(58,46,42,.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
   .modal-back.open{display:flex;}
-  .modal{background:#fff; border-radius:14px; max-width:560px; width:100%; max-height:82vh; overflow-y:auto; padding:26px;}
+  .modal{background:#fff; border-radius:24px; max-width:560px; width:100%; max-height:82vh; overflow-y:auto; padding:26px;}
   .modal-head{display:flex; gap:16px; margin-bottom:18px;}
-  .modal-head img{width:70px; height:100px; object-fit:cover; border-radius:6px; background:var(--paper-dark);}
-  .modal-head h3{font-family:'Noto Serif KR',serif; font-size:20px; margin:0 0 4px;}
+  .modal-head img{width:70px; height:100px; object-fit:cover; border-radius:12px; background:var(--paper-dark);}
+  .modal-head h3{font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:20px; margin:0 0 4px; color:var(--ink);}
   .modal-head p{font-size:13px; color:var(--ink-soft); margin:0 0 6px;}
-  .modal-avg{color:var(--gold); font-weight:700; font-size:14px;}
+  .modal-avg{color:var(--gold); font-weight:800; font-size:14px;}
   .modal-close{margin-left:auto; align-self:flex-start;}
   .modal-review{padding:14px 0; border-top:1px solid var(--paper-dark);}
   .modal-review:first-of-type{border-top:none;}
   .mr-top{display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;}
-  .mr-top b{color:var(--sage);}
+  .mr-top b{color:#7C6FD8;}
   .mr-stars{color:var(--gold); font-size:12.5px; margin-bottom:4px;}
   .mr-text{font-size:13.5px; line-height:1.6; white-space:pre-wrap;}
-  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--wood-dark); color:var(--paper); padding:12px 22px; border-radius:8px; font-size:13.5px; opacity:0; transition:all .25s ease; z-index:60; pointer-events:none;}
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:linear-gradient(135deg,var(--coral),var(--coral-dark)); color:#fff; padding:13px 24px; border-radius:999px; font-size:13.5px; font-weight:700; opacity:0; transition:all .25s ease; z-index:60; pointer-events:none; box-shadow:0 8px 20px rgba(255,107,133,.35);}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
-  @media (max-width:520px){ .field-row{flex-direction:column;} header{padding:36px 16px 54px;} }
+  @media (max-width:520px){ .field-row{flex-direction:column;} header{padding:38px 16px 56px;} }
 </style>
 </head>
 <body>
 
 <header>
   <div class="header-inner">
-    <p class="eyebrow">Book Club Archive</p>
-    <h1>우리의 서재</h1>
+    <p class="eyebrow">✨ Book Club Archive</p>
+    <h1>대북클럽</h1>
     <p class="sub">매달 한 번, 스쳐 지나가던 책 소개를 여기에 쌓아둡니다. 내가 읽은 책, 별점, 한 줄 이상의 생각을 남기고 서로의 서재를 구경하세요.</p>
     <div class="stat-row" id="statRow"></div>
   </div>
@@ -159,6 +168,10 @@ xoexagijjqyzcxfwyvpw
         <input type="text" id="nameInput" placeholder="예: 지은">
       </div>
       <div class="field">
+        <label for="dateInput">읽은 날짜</label>
+        <input type="date" id="dateInput">
+      </div>
+      <div class="field">
         <label>별점</label>
         <div class="stars" id="starPicker">
           <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
@@ -175,10 +188,12 @@ xoexagijjqyzcxfwyvpw
   <div class="tabs">
     <button class="tab active" data-tab="shelf">📚 책장</button>
     <button class="tab" data-tab="feed">🕒 최신 피드</button>
+    <button class="tab" data-tab="myshelf">🙋 내 서재</button>
   </div>
 
   <div id="shelfView"></div>
   <div id="feedView" style="display:none;"></div>
+  <div id="myShelfView" style="display:none;"></div>
 
 </div>
 
@@ -325,17 +340,25 @@ $$('#starPicker span').forEach(s=>{
 
 // ---------- 제출 ----------
 $('#nameInput').addEventListener('input', updateSubmitState);
+$('#nameInput').addEventListener('input', ()=>{ if($('#myShelfView').style.display!=='none') renderMyShelf(); });
+$('#dateInput').addEventListener('input', updateSubmitState);
 $('#reviewInput').addEventListener('input', updateSubmitState);
 
+function setDefaultDate(){
+  const el = $('#dateInput');
+  if(!el.value) el.value = new Date().toISOString().slice(0,10);
+}
+
 function updateSubmitState(){
-  const ok = pickedBook && $('#nameInput').value.trim() && starValue>0 && $('#reviewInput').value.trim();
+  const ok = pickedBook && $('#nameInput').value.trim() && $('#dateInput').value && starValue>0 && $('#reviewInput').value.trim();
   $('#submitBtn').disabled = !ok;
 }
 
 $('#submitBtn').addEventListener('click', async ()=>{
   const name = $('#nameInput').value.trim();
+  const readDate = $('#dateInput').value;
   const review = $('#reviewInput').value.trim();
-  if(!pickedBook || !name || !starValue || !review) return;
+  if(!pickedBook || !name || !readDate || !starValue || !review) return;
 
   $('#submitBtn').disabled = true;
   $('#submitBtn').textContent = '저장 중...';
@@ -346,7 +369,8 @@ $('#submitBtn').addEventListener('click', async ()=>{
     thumbnail: pickedBook.thumbnail,
     reviewer: name,
     rating: starValue,
-    review: review
+    review: review,
+    read_date: readDate
   };
 
   const ok = await insertEntry(entry);
@@ -373,6 +397,8 @@ $$('.tab').forEach(t=>{
     const tab = t.dataset.tab;
     $('#shelfView').style.display = tab==='shelf' ? 'block':'none';
     $('#feedView').style.display = tab==='feed' ? 'block':'none';
+    $('#myShelfView').style.display = tab==='myshelf' ? 'block':'none';
+    if(tab==='myshelf') renderMyShelf();
   });
 });
 
@@ -381,9 +407,9 @@ function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function groupByBook(){
+function groupByBook(list){
   const map = new Map();
-  entries.forEach(e=>{
+  list.forEach(e=>{
     const key = e.title.trim().toLowerCase()+'|'+(e.author||'').trim().toLowerCase();
     if(!map.has(key)) map.set(key, {title:e.title, author:e.author, thumbnail:e.thumbnail, reviews:[]});
     map.get(key).reviews.push(e);
@@ -391,10 +417,56 @@ function groupByBook(){
   return Array.from(map.values());
 }
 
-function render(){ renderStats(); renderShelf(); renderFeed(); }
+function bookYear(b){
+  const dates = b.reviews.map(r => r.read_date || r.created_at).filter(Boolean).sort();
+  return new Date(dates[0]).getFullYear();
+}
+
+function bookCardHtml(b){
+  const avg = (b.reviews.reduce((s,r)=>s+r.rating,0)/b.reviews.length).toFixed(1);
+  return `
+    <div class="shelf-book" data-key="${escapeHtml(b.title)}|${escapeHtml(b.author||'')}">
+      <div class="shelf-cover">
+        ${b.thumbnail ? `<img src="${b.thumbnail}">` : `<div class="no-cover">${escapeHtml(b.title)}</div>`}
+        <div class="count-badge">${b.reviews.length}명</div>
+      </div>
+      <p class="shelf-title">${escapeHtml(b.title)}</p>
+      <p class="shelf-author">${escapeHtml(b.author||'')}</p>
+      <p class="shelf-rating">★ ${avg}</p>
+    </div>`;
+}
+
+function renderShelfInto(el, list, emptyTitle, emptyBody){
+  const books = groupByBook(list).sort((a,b)=> b.reviews.length - a.reviews.length || a.title.localeCompare(b.title));
+  if(books.length===0){
+    el.innerHTML = `<div class="panel empty"><b>${emptyTitle}</b>${emptyBody}</div>`;
+    return;
+  }
+  const byYear = new Map();
+  books.forEach(b=>{
+    const y = bookYear(b);
+    if(!byYear.has(y)) byYear.set(y, []);
+    byYear.get(y).push(b);
+  });
+  const years = Array.from(byYear.keys()).sort((a,b)=>b-a);
+  el.innerHTML = years.map(y=>`
+    <div class="year-group">
+      <h3 class="year-title">${y}년</h3>
+      <div class="shelf-grid">${byYear.get(y).map(bookCardHtml).join('')}</div>
+    </div>`).join('');
+
+  $$('.shelf-book', el).forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const [title, author] = card.dataset.key.split('|');
+      openBookModal(title, author);
+    });
+  });
+}
+
+function render(){ renderStats(); renderShelf(); renderFeed(); renderMyShelf(); }
 
 function renderStats(){
-  const books = groupByBook();
+  const books = groupByBook(entries);
   const reviewers = new Set(entries.map(e=>e.reviewer));
   const avg = entries.length ? (entries.reduce((s,e)=>s+e.rating,0)/entries.length).toFixed(1) : '–';
   $('#statRow').innerHTML = `
@@ -406,32 +478,18 @@ function renderStats(){
 }
 
 function renderShelf(){
-  const el = $('#shelfView');
-  const books = groupByBook().sort((a,b)=> b.reviews.length - a.reviews.length || a.title.localeCompare(b.title));
-  if(books.length===0){
-    el.innerHTML = `<div class="panel empty"><b>아직 기록된 책이 없어요</b>위에서 첫 책을 검색해 기록해보세요.</div>`;
+  renderShelfInto($('#shelfView'), entries, '아직 기록된 책이 없어요', '위에서 첫 책을 검색해 기록해보세요.');
+}
+
+function renderMyShelf(){
+  const myName = ($('#nameInput').value || '').trim();
+  const el = $('#myShelfView');
+  if(!myName){
+    el.innerHTML = `<div class="panel empty"><b>내 이름을 먼저 입력해주세요</b>위 기록 폼에 이름을 남기면 내가 기록한 책만 모아볼 수 있어요.</div>`;
     return;
   }
-  el.innerHTML = `<div class="shelf-grid">${books.map(b=>{
-    const avg = (b.reviews.reduce((s,r)=>s+r.rating,0)/b.reviews.length).toFixed(1);
-    return `
-      <div class="shelf-book" data-key="${escapeHtml(b.title)}|${escapeHtml(b.author||'')}">
-        <div class="shelf-cover">
-          ${b.thumbnail ? `<img src="${b.thumbnail}">` : `<div class="no-cover">${escapeHtml(b.title)}</div>`}
-          <div class="count-badge">${b.reviews.length}명</div>
-        </div>
-        <p class="shelf-title">${escapeHtml(b.title)}</p>
-        <p class="shelf-author">${escapeHtml(b.author||'')}</p>
-        <p class="shelf-rating">★ ${avg}</p>
-      </div>`;
-  }).join('')}</div>`;
-
-  $$('.shelf-book', el).forEach(card=>{
-    card.addEventListener('click', ()=>{
-      const [title, author] = card.dataset.key.split('|');
-      openBookModal(title, author);
-    });
-  });
+  const mine = entries.filter(e=>e.reviewer.trim()===myName);
+  renderShelfInto(el, mine, `${escapeHtml(myName)}님의 서재가 비어있어요`, '책을 기록하면 여기서 모아볼 수 있어요.');
 }
 
 function renderFeed(){
@@ -453,7 +511,7 @@ function renderFeed(){
             <span class="feed-date">${dateStr}</span>
           </div>
           <p class="feed-author">${escapeHtml(e.author||'')}</p>
-          <p class="feed-reviewer">${escapeHtml(e.reviewer)}</p>
+          <p class="feed-reviewer reviewer-link" data-reviewer="${escapeHtml(e.reviewer)}">${escapeHtml(e.reviewer)}</p>
           <p class="feed-stars">${'★'.repeat(e.rating)}${'☆'.repeat(5-e.rating)}</p>
           <p class="feed-review">${escapeHtml(e.review)}</p>
         </div>
@@ -478,7 +536,7 @@ function openBookModal(title, author){
     </div>
     <div>${related.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(r=>`
       <div class="modal-review">
-        <div class="mr-top"><b>${escapeHtml(r.reviewer)}</b><span>${new Date(r.created_at).getMonth()+1}월 ${new Date(r.created_at).getDate()}일</span></div>
+        <div class="mr-top"><b class="reviewer-link" data-reviewer="${escapeHtml(r.reviewer)}">${escapeHtml(r.reviewer)}</b><span>${new Date(r.created_at).getMonth()+1}월 ${new Date(r.created_at).getDate()}일</span></div>
         <div class="mr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
         <div class="mr-text">${escapeHtml(r.review)}</div>
       </div>`).join('')}
@@ -487,11 +545,35 @@ function openBookModal(title, author){
   $('#modalBack').classList.add('open');
   $('#closeModal').addEventListener('click', closeModal);
 }
+function openReviewerModal(name){
+  const mine = entries.filter(e=>e.reviewer.trim()===name.trim());
+  if(mine.length===0) return;
+  const bookCount = groupByBook(mine).length;
+  $('#modalContent').innerHTML = `
+    <div class="modal-head">
+      <div>
+        <h3>${escapeHtml(name)}님의 서재</h3>
+        <p>책 ${bookCount}권 · 리뷰 ${mine.length}개</p>
+      </div>
+      <button class="btn-ghost modal-close" id="closeModal">닫기</button>
+    </div>
+    <div id="reviewerShelf"></div>
+  `;
+  renderShelfInto($('#reviewerShelf'), mine, `${escapeHtml(name)}님이 기록한 책이 없어요`, '');
+  $('#modalBack').classList.add('open');
+  $('#closeModal').addEventListener('click', closeModal);
+}
+
 function closeModal(){ $('#modalBack').classList.remove('open'); }
 $('#modalBack').addEventListener('click', (e)=>{ if(e.target.id==='modalBack') closeModal(); });
+document.body.addEventListener('click', (e)=>{
+  const link = e.target.closest('.reviewer-link');
+  if(link) openReviewerModal(link.dataset.reviewer);
+});
 
 // ---------- 시작 ----------
 loadMyName();
+setDefaultDate();
 loadEntries();
 </script>
 
