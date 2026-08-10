@@ -214,11 +214,24 @@ function showToast(msg){
 
 // ---------- Supabase 데이터 ----------
 async function loadEntries(){
-const { data, error } = await sb.from('entries').select('*').order('created_at', { ascending:false });
+  const { data, error } = await sb.from('entries').select('*').order('created_at', { ascending:false });
+  if(error){
+    console.error(error);
+    showToast('목록을 불러오는 중 오류가 발생했어요.');
+    return;
+  }
+  entries = data || [];
+  render();
 }
 
 async function insertEntry(entry){
- const { error } = await sb.from('entries').insert([entry]);
+  const { error } = await sb.from('entries').insert([entry]);
+  if(error){
+    console.error(error);
+    showToast('저장 중 오류가 발생했어요: ' + error.message);
+    return false;
+  }
+  return true;
 }
 
 function loadMyName(){
