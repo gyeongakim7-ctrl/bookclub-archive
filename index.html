@@ -100,6 +100,8 @@
   .feed-date{font-size:11.5px; color:#C2A99C;}
   .feed-stars{color:var(--gold); font-size:14px; margin:4px 0 6px;}
   .feed-review{font-size:14px; line-height:1.65; color:#4A3D36; white-space:pre-wrap;}
+  .mini-delete{display:inline-block; margin-top:10px; background:transparent; color:var(--danger); border:1.5px solid #FFD9D3; font-size:11.5px; font-weight:700; padding:5px 12px;}
+  .mini-delete:hover{background:#FFF1EF;}
   .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
   .empty b{display:block; font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:18px; color:var(--ink); margin-bottom:6px;}
   .modal-back{position:fixed; inset:0; background:rgba(58,46,42,.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
@@ -249,6 +251,16 @@ async function insertEntry(entry){
   return true;
 }
 
+async function deleteEntry(id){
+  const { error } = await sb.from('entries').delete().eq('id', id);
+  if(error){
+    console.error(error);
+    showToast('삭제 중 오류가 발생했어요: ' + error.message);
+    return false;
+  }
+  return true;
+}
+
 function loadMyName(){
   const n = localStorage.getItem('bookclub-my-name');
   if(n) $('#nameInput').value = n;
@@ -341,6 +353,7 @@ $$('#starPicker span').forEach(s=>{
 // ---------- 제출 ----------
 $('#nameInput').addEventListener('input', updateSubmitState);
 $('#nameInput').addEventListener('input', ()=>{ if($('#myShelfView').style.display!=='none') renderMyShelf(); });
+$('#nameInput').addEventListener('input', ()=>{ if($('#feedView').style.display!=='none') renderFeed(); });
 $('#dateInput').addEventListener('input', updateSubmitState);
 $('#reviewInput').addEventListener('input', updateSubmitState);
 
@@ -494,6 +507,7 @@ function renderMyShelf(){
 
 function renderFeed(){
   const el = $('#feedView');
+  const myName = ($('#nameInput').value || '').trim();
   const sorted = [...entries].sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
   if(sorted.length===0){
     el.innerHTML = `<div class="panel empty"><b>아직 남겨진 리뷰가 없어요</b>첫 리뷰를 남겨 서재를 채워보세요.</div>`;
@@ -502,6 +516,7 @@ function renderFeed(){
   el.innerHTML = `<div class="panel" style="padding:6px 24px;">${sorted.map(e=>{
     const d = new Date(e.created_at);
     const dateStr = `${d.getMonth()+1}월 ${d.getDate()}일`;
+    const isMine = myName && e.reviewer.trim()===myName;
     return `
       <div class="feed-item">
         ${e.thumbnail ? `<img class="feed-cover" src="${e.thumbnail}">` : `<div class="feed-cover"></div>`}
@@ -514,6 +529,7 @@ function renderFeed(){
           <p class="feed-reviewer reviewer-link" data-reviewer="${escapeHtml(e.reviewer)}">${escapeHtml(e.reviewer)}</p>
           <p class="feed-stars">${'★'.repeat(e.rating)}${'☆'.repeat(5-e.rating)}</p>
           <p class="feed-review">${escapeHtml(e.review)}</p>
+          ${isMine ? `<button class="mini-delete" data-id="${e.id}">삭제하기</button>` : ''}
         </div>
       </div>`;
   }).join('')}</div>`;
@@ -522,6 +538,7 @@ function renderFeed(){
 function openBookModal(title, author){
   const related = entries.filter(e=>e.title.trim().toLowerCase()===title.trim().toLowerCase() && (e.author||'').trim().toLowerCase()===author.trim().toLowerCase());
   if(related.length===0) return;
+  const myName = ($('#nameInput').value || '').trim();
   const avg = (related.reduce((s,r)=>s+r.rating,0)/related.length).toFixed(1);
   const thumb = related[0].thumbnail;
   $('#modalContent').innerHTML = `
@@ -534,12 +551,16 @@ function openBookModal(title, author){
       </div>
       <button class="btn-ghost modal-close" id="closeModal">닫기</button>
     </div>
-    <div>${related.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(r=>`
+    <div>${related.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(r=>{
+      const isMine = myName && r.reviewer.trim()===myName;
+      return `
       <div class="modal-review">
         <div class="mr-top"><b class="reviewer-link" data-reviewer="${escapeHtml(r.reviewer)}">${escapeHtml(r.reviewer)}</b><span>${new Date(r.created_at).getMonth()+1}월 ${new Date(r.created_at).getDate()}일</span></div>
         <div class="mr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
         <div class="mr-text">${escapeHtml(r.review)}</div>
-      </div>`).join('')}
+        ${isMine ? `<button class="mini-delete" data-id="${r.id}">삭제하기</button>` : ''}
+      </div>`;
+    }).join('')}
     </div>
   `;
   $('#modalBack').classList.add('open');
@@ -566,9 +587,23 @@ function openReviewerModal(name){
 
 function closeModal(){ $('#modalBack').classList.remove('open'); }
 $('#modalBack').addEventListener('click', (e)=>{ if(e.target.id==='modalBack') closeModal(); });
-document.body.addEventListener('click', (e)=>{
+document.body.addEventListener('click', async (e)=>{
   const link = e.target.closest('.reviewer-link');
-  if(link) openReviewerModal(link.dataset.reviewer);
+  if(link){ openReviewerModal(link.dataset.reviewer); return; }
+
+  const del = e.target.closest('.mini-delete');
+  if(del){
+    if(!confirm('이 리뷰를 삭제할까요? 되돌릴 수 없어요.')) return;
+    del.disabled = true;
+    const ok = await deleteEntry(Number(del.dataset.id));
+    if(ok){
+      showToast('삭제했어요.');
+      closeModal();
+      loadEntries();
+    }else{
+      del.disabled = false;
+    }
+  }
 });
 
 // ---------- 시작 ----------
