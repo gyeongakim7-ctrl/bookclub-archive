@@ -590,7 +590,7 @@ function renderFeed(){
     return;
   }
   el.innerHTML = `<div class="panel" style="padding:6px 24px;">${sorted.map(e=>{
-    const d = new Date(e.created_at);
+    const d = new Date(e.read_date || e.created_at);
     const dateStr = `${d.getMonth()+1}월 ${d.getDate()}일`;
     const isMine = myName && e.reviewer.trim()===myName;
     const editing = editingId === e.id;
