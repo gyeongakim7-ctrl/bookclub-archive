@@ -7,7 +7,7 @@ create table entries (
   thumbnail text,
   reviewer text not null,
   rating numeric(2,1) not null,
-  review text not null,
+  review text,
   created_at timestamptz default now()
 );
 
@@ -58,3 +58,6 @@ with check (true);
 
 -- 별점 반개(3.5, 4.5 등)를 저장하려면 rating 컬럼을 정수에서 소수로 바꿔야 해요.
 alter table entries alter column rating type numeric(2,1) using rating::numeric(2,1);
+
+-- 리뷰 없이 별점/날짜만으로도 책을 등록할 수 있게 하려면 review 필수 제약을 풀어줘야 해요.
+alter table entries alter column review drop not null;
