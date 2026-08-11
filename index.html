@@ -618,7 +618,7 @@ function openBookModal(title, author){
       const editing = editingId === r.id;
       return `
       <div class="modal-review">
-        <div class="mr-top"><b class="reviewer-link" data-reviewer="${escapeHtml(r.reviewer)}">${escapeHtml(r.reviewer)}</b><span>${new Date(r.created_at).getMonth()+1}월 ${new Date(r.created_at).getDate()}일</span></div>
+        <div class="mr-top"><b class="reviewer-link" data-reviewer="${escapeHtml(r.reviewer)}">${escapeHtml(r.reviewer)}</b><span>${new Date(r.read_date || r.created_at).getMonth()+1}월 ${new Date(r.read_date || r.created_at).getDate()}일</span></div>
         ${editing ? editFormHtml(r) : `
           <div class="mr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
           <div class="mr-text">${escapeHtml(r.review)}</div>
