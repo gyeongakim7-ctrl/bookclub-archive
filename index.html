@@ -68,10 +68,14 @@
   .field-row{display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap;}
   .field{flex:1; min-width:160px;}
   .field label{font-size:12.5px; font-weight:800; color:var(--ink-soft); display:block; margin-bottom:6px;}
-  .stars{display:flex; gap:4px; font-size:28px;}
-  .stars span{cursor:pointer; color:#FFE3CC; transition:color .1s, transform .1s;}
-  .stars span:hover{transform:scale(1.15);}
-  .stars span.on{color:var(--gold);}
+  .star-input{position:relative; display:inline-block; font-size:28px; line-height:1; letter-spacing:4px; user-select:none;}
+  .star-input-bg{color:#FFE3CC; white-space:nowrap;}
+  .star-input-fg{position:absolute; top:0; left:0; overflow:hidden; white-space:nowrap; color:var(--gold); width:0%; pointer-events:none;}
+  .star-input-hits{position:absolute; top:0; left:0; width:100%; height:100%; display:flex;}
+  .star-input-hits span{flex:1; cursor:pointer;}
+  .star-display{position:relative; display:inline-block; white-space:nowrap;}
+  .star-display-bg{color:#FFE3CC;}
+  .star-display-fg{position:absolute; top:0; left:0; overflow:hidden; white-space:nowrap; color:var(--gold);}
   textarea{min-height:80px; resize:vertical; line-height:1.5;}
   .tabs{display:flex; gap:8px; margin:0 0 20px;}
   .tab{padding:9px 18px; border-radius:999px; font-size:13.5px; font-weight:800; background:#fff; color:var(--ink-soft); border:1.5px solid var(--paper-dark);}
@@ -111,7 +115,7 @@
   .mini-edit{color:var(--coral-dark); border-color:var(--paper-dark);}
   .mini-edit:hover{background:#FFF3EF;}
   .edit-form{margin-top:10px; padding:14px; background:#FFF7F4; border-radius:14px; border:1.5px solid var(--paper-dark);}
-  .edit-form .stars{margin-bottom:10px;}
+  .edit-form .star-input{margin-bottom:10px;}
   .edit-form input[type=date]{width:auto; margin-bottom:10px;}
   .edit-form textarea{margin-bottom:10px;}
   .edit-actions{display:flex; gap:8px;}
@@ -188,9 +192,13 @@
         <input type="date" id="dateInput">
       </div>
       <div class="field">
-        <label>별점</label>
-        <div class="stars" id="starPicker">
-          <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+        <label>별점 <span style="font-weight:400;color:var(--ink-soft);">(반개도 가능해요)</span></label>
+        <div class="star-input" id="starPicker" data-value="0">
+          <div class="star-input-bg">★★★★★</div>
+          <div class="star-input-fg" style="width:0%">★★★★★</div>
+          <div class="star-input-hits">
+            <span data-v="1"></span><span data-v="2"></span><span data-v="3"></span><span data-v="4"></span><span data-v="5"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -234,9 +242,20 @@ const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
 
 let entries = [];
 let pickedBook = null;
-let starValue = 0;
 let editingId = null;
 let currentModalBook = null;
+
+function setPickerValue(container, val){
+  container.dataset.value = val;
+  container.querySelector('.star-input-fg').style.width = (val/5*100) + '%';
+}
+function getPickerValue(container){
+  return parseFloat(container.dataset.value) || 0;
+}
+function starsDisplayHtml(rating){
+  const pct = Math.max(0, Math.min(5, rating)) / 5 * 100;
+  return `<span class="star-display"><span class="star-display-bg">★★★★★</span><span class="star-display-fg" style="width:${pct}%">★★★★★</span></span>`;
+}
 
 function showToast(msg){
   const t = $('#toast');
@@ -376,15 +395,6 @@ $('#manualPickBtn').addEventListener('click', ()=>{
   $('#manualBox').style.display='none';
 });
 
-// ---------- 별점 ----------
-$$('#starPicker span').forEach(s=>{
-  s.addEventListener('click', ()=>{
-    starValue = parseInt(s.dataset.v);
-    $$('#starPicker span').forEach(el=>el.classList.toggle('on', parseInt(el.dataset.v) <= starValue));
-    updateSubmitState();
-  });
-});
-
 // ---------- 제출 ----------
 $('#nameInput').addEventListener('input', updateSubmitState);
 $('#nameInput').addEventListener('input', ()=>{ if($('#myShelfView').style.display!=='none') renderMyShelf(); });
@@ -398,7 +408,8 @@ function setDefaultDate(){
 }
 
 function updateSubmitState(){
-  const ok = pickedBook && $('#nameInput').value.trim() && $('#dateInput').value && starValue>0 && $('#reviewInput').value.trim();
+  const rating = getPickerValue($('#starPicker'));
+  const ok = pickedBook && $('#nameInput').value.trim() && $('#dateInput').value && rating>0 && $('#reviewInput').value.trim();
   $('#submitBtn').disabled = !ok;
 }
 
@@ -406,7 +417,8 @@ $('#submitBtn').addEventListener('click', async ()=>{
   const name = $('#nameInput').value.trim();
   const readDate = $('#dateInput').value;
   const review = $('#reviewInput').value.trim();
-  if(!pickedBook || !name || !readDate || !starValue || !review) return;
+  const rating = getPickerValue($('#starPicker'));
+  if(!pickedBook || !name || !readDate || !rating || !review) return;
 
   $('#submitBtn').disabled = true;
   $('#submitBtn').textContent = '저장 중...';
@@ -416,16 +428,16 @@ $('#submitBtn').addEventListener('click', async ()=>{
     author: pickedBook.author,
     thumbnail: pickedBook.thumbnail,
     reviewer: name,
-    rating: starValue,
+    rating: rating,
     review: review,
     read_date: readDate
   };
 
   const ok = await insertEntry(entry);
 
-  pickedBook = null; starValue = 0;
+  pickedBook = null;
+  setPickerValue($('#starPicker'), 0);
   $('#reviewInput').value = '';
-  $$('#starPicker span').forEach(el=>el.classList.remove('on'));
   renderPickedBook();
   $('#submitBtn').textContent = '서재에 기록하기';
   updateSubmitState();
@@ -541,11 +553,17 @@ function renderMyShelf(){
 }
 
 function editFormHtml(e){
-  const stars = [1,2,3,4,5].map(v=>`<span data-v="${v}" class="${v<=e.rating?'on':''}">★</span>`).join('');
+  const pct = Math.max(0, Math.min(5, e.rating)) / 5 * 100;
   const dateVal = e.read_date || (e.created_at||'').slice(0,10);
   return `
     <div class="edit-form" data-id="${e.id}">
-      <div class="stars edit-stars">${stars}</div>
+      <div class="star-input" data-value="${e.rating}">
+        <div class="star-input-bg">★★★★★</div>
+        <div class="star-input-fg" style="width:${pct}%">★★★★★</div>
+        <div class="star-input-hits">
+          <span data-v="1"></span><span data-v="2"></span><span data-v="3"></span><span data-v="4"></span><span data-v="5"></span>
+        </div>
+      </div>
       <input type="date" class="edit-date" value="${dateVal}">
       <textarea class="edit-review">${escapeHtml(e.review)}</textarea>
       <div class="edit-actions">
@@ -587,7 +605,7 @@ function renderFeed(){
           <p class="feed-author">${escapeHtml(e.author||'')}</p>
           <p class="feed-reviewer reviewer-link" data-reviewer="${escapeHtml(e.reviewer)}">${escapeHtml(e.reviewer)}</p>
           ${editing ? editFormHtml(e) : `
-            <p class="feed-stars">${'★'.repeat(e.rating)}${'☆'.repeat(5-e.rating)}</p>
+            <p class="feed-stars">${starsDisplayHtml(e.rating)}</p>
             <p class="feed-review">${escapeHtml(e.review)}</p>
             ${reviewControlsHtml(e, isMine)}
           `}
@@ -620,7 +638,7 @@ function openBookModal(title, author){
       <div class="modal-review">
         <div class="mr-top"><b class="reviewer-link" data-reviewer="${escapeHtml(r.reviewer)}">${escapeHtml(r.reviewer)}</b><span>${new Date(r.read_date || r.created_at).getMonth()+1}월 ${new Date(r.read_date || r.created_at).getDate()}일</span></div>
         ${editing ? editFormHtml(r) : `
-          <div class="mr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+          <div class="mr-stars">${starsDisplayHtml(r.rating)}</div>
           <div class="mr-text">${escapeHtml(r.review)}</div>
           ${reviewControlsHtml(r, isMine)}
         `}
@@ -663,10 +681,15 @@ document.body.addEventListener('click', async (e)=>{
   const link = e.target.closest('.reviewer-link');
   if(link){ openReviewerModal(link.dataset.reviewer); return; }
 
-  const editStar = e.target.closest('.edit-stars span');
-  if(editStar){
-    const val = parseInt(editStar.dataset.v);
-    Array.from(editStar.parentElement.children).forEach(el=>el.classList.toggle('on', parseInt(el.dataset.v)<=val));
+  const starHit = e.target.closest('.star-input-hits span');
+  if(starHit){
+    const container = starHit.closest('.star-input');
+    const idx = parseInt(starHit.dataset.v);
+    const rect = starHit.getBoundingClientRect();
+    const isLeftHalf = (e.clientX - rect.left) < rect.width/2;
+    const val = isLeftHalf ? idx - 0.5 : idx;
+    setPickerValue(container, val);
+    if(container.id === 'starPicker') updateSubmitState();
     return;
   }
 
@@ -688,7 +711,7 @@ document.body.addEventListener('click', async (e)=>{
   if(saveBtn){
     const id = Number(saveBtn.dataset.id);
     const form = saveBtn.closest('.edit-form');
-    const rating = form.querySelectorAll('.edit-stars span.on').length;
+    const rating = getPickerValue(form.querySelector('.star-input'));
     const read_date = form.querySelector('.edit-date').value;
     const review = form.querySelector('.edit-review').value.trim();
     if(!rating || !read_date || !review){ showToast('별점, 날짜, 리뷰를 모두 입력해주세요.'); return; }

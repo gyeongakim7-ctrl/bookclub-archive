@@ -6,7 +6,7 @@ create table entries (
   author text,
   thumbnail text,
   reviewer text not null,
-  rating int not null,
+  rating numeric(2,1) not null,
   review text not null,
   created_at timestamptz default now()
 );
@@ -55,3 +55,6 @@ create policy "update_own_entries"
 on entries for update
 using (true)
 with check (true);
+
+-- 별점 반개(3.5, 4.5 등)를 저장하려면 rating 컬럼을 정수에서 소수로 바꿔야 해요.
+alter table entries alter column rating type numeric(2,1) using rating::numeric(2,1);
