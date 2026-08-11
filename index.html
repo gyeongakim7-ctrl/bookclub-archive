@@ -105,6 +105,7 @@
   .feed-review{font-size:14px; line-height:1.65; color:#4A3D36; white-space:pre-wrap;}
   .mini-delete{display:inline-block; margin-top:10px; background:transparent; color:var(--danger); border:1.5px solid #FFD9D3; font-size:11.5px; font-weight:700; padding:5px 12px;}
   .mini-delete:hover{background:#FFF1EF;}
+  .mini-delete.confirming{background:var(--danger); color:#fff; border-color:var(--danger);}
   .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
   .empty b{display:block; font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:18px; color:var(--ink); margin-bottom:6px;}
   .modal-back{position:fixed; inset:0; background:rgba(58,46,42,.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
@@ -596,8 +597,19 @@ document.body.addEventListener('click', async (e)=>{
 
   const del = e.target.closest('.mini-delete');
   if(del){
-    if(!confirm('이 리뷰를 삭제할까요? 되돌릴 수 없어요.')) return;
+    if(!del.classList.contains('confirming')){
+      del.classList.add('confirming');
+      del.textContent = '정말 삭제할까요?';
+      clearTimeout(del._resetTimer);
+      del._resetTimer = setTimeout(()=>{
+        del.classList.remove('confirming');
+        del.textContent = '삭제하기';
+      }, 3000);
+      return;
+    }
+    clearTimeout(del._resetTimer);
     del.disabled = true;
+    del.textContent = '삭제 중...';
     const ok = await deleteEntry(Number(del.dataset.id));
     if(ok){
       showToast('삭제했어요.');
@@ -605,6 +617,8 @@ document.body.addEventListener('click', async (e)=>{
       loadEntries();
     }else{
       del.disabled = false;
+      del.classList.remove('confirming');
+      del.textContent = '삭제하기';
     }
   }
 });
