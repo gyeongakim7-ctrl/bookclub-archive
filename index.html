@@ -121,6 +121,22 @@
   .edit-form textarea{margin-bottom:10px;}
   .edit-actions{display:flex; gap:8px;}
   .edit-actions button{padding:8px 16px; font-size:13px;}
+  .add-review{margin-top:18px; padding-top:18px; border-top:1.5px dashed var(--paper-dark);}
+  .add-review-title{font-weight:800; font-size:14px; margin:0 0 10px; color:var(--ink);}
+  .add-review input[type=text], .add-review input[type=date]{margin-bottom:10px;}
+  .add-review textarea{margin-bottom:10px; min-height:60px;}
+  .add-review .star-input{margin-bottom:10px;}
+  .reaction-row{display:flex; gap:6px; margin-top:10px;}
+  .reaction-btn{background:#fff; border:1.5px solid var(--paper-dark); color:var(--ink-soft); font-size:12.5px; font-weight:700; padding:5px 11px; border-radius:999px;}
+  .reaction-btn:hover{background:#FFF3EF;}
+  .reaction-btn.active{background:linear-gradient(135deg,var(--coral),var(--coral-dark)); color:#fff; border-color:transparent;}
+  .reply-section{margin-top:10px; padding-left:14px; border-left:2px solid var(--paper-dark);}
+  .reply-item{font-size:12.5px; margin-bottom:6px; line-height:1.5;}
+  .reply-item b{color:#7C6FD8; margin-right:6px;}
+  .reply-item .mini-delete{font-size:10.5px; padding:2px 8px; margin-left:6px; border-radius:999px;}
+  .reply-add{display:flex; gap:6px; margin-top:6px;}
+  .reply-add input{flex:1; padding:8px 10px; font-size:12.5px; margin-bottom:0;}
+  .reply-add button{padding:8px 14px; font-size:12px; flex-shrink:0;}
   .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
   .empty b{display:block; font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:18px; color:var(--ink); margin-bottom:6px;}
   .modal-back{position:fixed; inset:0; background:rgba(58,46,42,.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
@@ -243,9 +259,12 @@ const $ = (s,el=document)=>el.querySelector(s);
 const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
 
 let entries = [];
+let reactions = [];
+let replies = [];
 let pickedBook = null;
 let editingId = null;
 let currentModalBook = null;
+const REACTION_EMOJIS = ['👍','😂'];
 
 function setPickerValue(container, val){
   container.dataset.value = val;
@@ -268,14 +287,44 @@ function showToast(msg){
 
 // ---------- Supabase 데이터 ----------
 async function loadEntries(){
-  const { data, error } = await sb.from('entries').select('*').order('created_at', { ascending:false });
-  if(error){
-    console.error(error);
+  const [entriesRes, reactionsRes, repliesRes] = await Promise.all([
+    sb.from('entries').select('*').order('created_at', { ascending:false }),
+    sb.from('reactions').select('*'),
+    sb.from('replies').select('*').order('created_at', { ascending:true })
+  ]);
+  if(entriesRes.error){
+    console.error(entriesRes.error);
     showToast('목록을 불러오는 중 오류가 발생했어요.');
     return;
   }
-  entries = data || [];
+  entries = entriesRes.data || [];
+  reactions = reactionsRes.data || [];
+  replies = repliesRes.data || [];
   render();
+}
+
+async function toggleReaction(entryId, emoji, myName){
+  const existing = reactions.find(r=>r.entry_id===entryId && r.emoji===emoji && r.reactor.trim()===myName);
+  if(existing){
+    const { error } = await sb.from('reactions').delete().eq('id', existing.id);
+    if(error){ console.error(error); showToast('오류가 발생했어요.'); return false; }
+  }else{
+    const { error } = await sb.from('reactions').insert([{ entry_id: entryId, reactor: myName, emoji }]);
+    if(error){ console.error(error); showToast('오류가 발생했어요.'); return false; }
+  }
+  return true;
+}
+
+async function addReply(entryId, replier, text){
+  const { error } = await sb.from('replies').insert([{ entry_id: entryId, replier, text }]);
+  if(error){ console.error(error); showToast('답글 등록 중 오류가 발생했어요.'); return false; }
+  return true;
+}
+
+async function deleteReply(id){
+  const { error } = await sb.from('replies').delete().eq('id', id);
+  if(error){ console.error(error); showToast('삭제 중 오류가 발생했어요.'); return false; }
+  return true;
 }
 
 async function insertEntry(entry){
@@ -579,8 +628,54 @@ function reviewControlsHtml(e, isMine){
   if(!isMine) return '';
   return `<div class="review-actions">
     <button class="mini-edit" data-id="${e.id}">수정하기</button>
-    <button class="mini-delete" data-id="${e.id}">삭제하기</button>
+    <button class="mini-delete" data-label="삭제하기" data-id="${e.id}">삭제하기</button>
   </div>`;
+}
+
+function reactionsHtml(entryId){
+  const myName = ($('#nameInput').value || '').trim();
+  return `<div class="reaction-row">${REACTION_EMOJIS.map(emoji=>{
+    const count = reactions.filter(r=>r.entry_id===entryId && r.emoji===emoji).length;
+    const active = myName && reactions.some(r=>r.entry_id===entryId && r.emoji===emoji && r.reactor.trim()===myName);
+    return `<button class="reaction-btn ${active?'active':''}" data-entry-id="${entryId}" data-emoji="${emoji}">${emoji}${count>0?' '+count:''}</button>`;
+  }).join('')}</div>`;
+}
+
+function repliesHtml(entryId){
+  const myName = ($('#nameInput').value || '').trim();
+  const mine = replies.filter(r=>r.entry_id===entryId);
+  const items = mine.map(r=>{
+    const isMine = myName && r.replier.trim()===myName;
+    return `<div class="reply-item"><b class="reviewer-link" data-reviewer="${escapeHtml(r.replier)}">${escapeHtml(r.replier)}</b>${escapeHtml(r.text)}${isMine ? `<button class="mini-delete" data-type="reply" data-label="삭제" data-id="${r.id}">삭제</button>` : ''}</div>`;
+  }).join('');
+  return `
+    <div class="reply-section">
+      ${items}
+      <div class="reply-add">
+        <input type="text" class="reply-input" placeholder="답글을 남겨보세요" data-entry-id="${entryId}">
+        <button class="btn-ghost reply-submit" data-entry-id="${entryId}">등록</button>
+      </div>
+    </div>`;
+}
+
+function myReviewFormHtml(){
+  const savedName = ($('#nameInput').value || '').trim();
+  const today = new Date().toISOString().slice(0,10);
+  return `
+    <div class="add-review">
+      <p class="add-review-title">나도 리뷰 남기기</p>
+      <input type="text" class="my-review-name" placeholder="내 이름" value="${escapeHtml(savedName)}">
+      <input type="date" class="my-review-date" value="${today}">
+      <div class="star-input my-review-stars" data-value="0">
+        <div class="star-input-bg">★★★★★</div>
+        <div class="star-input-fg" style="width:0%">★★★★★</div>
+        <div class="star-input-hits">
+          <span data-v="1"></span><span data-v="2"></span><span data-v="3"></span><span data-v="4"></span><span data-v="5"></span>
+        </div>
+      </div>
+      <textarea class="my-review-text" placeholder="이 책에 대해 하고 싶은 이야기를 남겨주세요. (선택)"></textarea>
+      <button class="btn-primary my-review-submit">서재에 기록하기</button>
+    </div>`;
 }
 
 function renderFeed(){
@@ -609,6 +704,8 @@ function renderFeed(){
           ${editing ? editFormHtml(e) : `
             <p class="feed-stars">${starsDisplayHtml(e.rating)}</p>
             ${e.review ? `<p class="feed-review">${escapeHtml(e.review)}</p>` : ''}
+            ${reactionsHtml(e.id)}
+            ${repliesHtml(e.id)}
             ${reviewControlsHtml(e, isMine)}
           `}
         </div>
@@ -642,11 +739,14 @@ function openBookModal(title, author){
         ${editing ? editFormHtml(r) : `
           <div class="mr-stars">${starsDisplayHtml(r.rating)}</div>
           ${r.review ? `<div class="mr-text">${escapeHtml(r.review)}</div>` : ''}
+          ${reactionsHtml(r.id)}
+          ${repliesHtml(r.id)}
           ${reviewControlsHtml(r, isMine)}
         `}
       </div>`;
     }).join('')}
     </div>
+    ${myReviewFormHtml()}
   `;
   $('#modalBack').classList.add('open');
   $('#closeModal').addEventListener('click', closeModal);
@@ -732,31 +832,113 @@ document.body.addEventListener('click', async (e)=>{
     return;
   }
 
+  const reactionBtn = e.target.closest('.reaction-btn');
+  if(reactionBtn){
+    const myName = ($('#nameInput').value || '').trim();
+    if(!myName){ showToast('먼저 내 이름을 입력해주세요.'); return; }
+    reactionBtn.disabled = true;
+    const entryId = Number(reactionBtn.dataset.entryId);
+    const emoji = reactionBtn.dataset.emoji;
+    const ok = await toggleReaction(entryId, emoji, myName);
+    if(ok){
+      saveMyName(myName);
+      await loadEntries();
+      if(currentModalBook) openBookModal(currentModalBook.title, currentModalBook.author);
+    }else{
+      reactionBtn.disabled = false;
+    }
+    return;
+  }
+
+  const replySubmitBtn = e.target.closest('.reply-submit');
+  if(replySubmitBtn){
+    const entryId = Number(replySubmitBtn.dataset.entryId);
+    const input = replySubmitBtn.closest('.reply-add').querySelector('.reply-input');
+    const text = input.value.trim();
+    const myName = ($('#nameInput').value || '').trim();
+    if(!myName){ showToast('먼저 내 이름을 입력해주세요.'); return; }
+    if(!text) return;
+    replySubmitBtn.disabled = true;
+    const ok = await addReply(entryId, myName, text);
+    if(ok){
+      saveMyName(myName);
+      await loadEntries();
+      if(currentModalBook) openBookModal(currentModalBook.title, currentModalBook.author);
+    }else{
+      replySubmitBtn.disabled = false;
+    }
+    return;
+  }
+
+  const myReviewSubmitBtn = e.target.closest('.my-review-submit');
+  if(myReviewSubmitBtn){
+    if(!currentModalBook) return;
+    const box = myReviewSubmitBtn.closest('.add-review');
+    const name = box.querySelector('.my-review-name').value.trim();
+    const date = box.querySelector('.my-review-date').value;
+    const rating = getPickerValue(box.querySelector('.star-input'));
+    const review = box.querySelector('.my-review-text').value.trim();
+    if(!name || !date || !rating){ showToast('이름, 날짜, 별점을 입력해주세요.'); return; }
+    const related = entries.find(x=>x.title.trim().toLowerCase()===currentModalBook.title.trim().toLowerCase() && (x.author||'').trim().toLowerCase()===currentModalBook.author.trim().toLowerCase());
+    myReviewSubmitBtn.disabled = true;
+    myReviewSubmitBtn.textContent = '저장 중...';
+    const ok = await insertEntry({
+      title: currentModalBook.title,
+      author: currentModalBook.author,
+      thumbnail: related ? related.thumbnail : '',
+      reviewer: name,
+      rating: rating,
+      review: review,
+      read_date: date
+    });
+    if(ok){
+      saveMyName(name);
+      $('#nameInput').value = name;
+      showToast('서재에 기록했어요 📖');
+      await loadEntries();
+      if(currentModalBook) openBookModal(currentModalBook.title, currentModalBook.author);
+    }else{
+      myReviewSubmitBtn.disabled = false;
+      myReviewSubmitBtn.textContent = '서재에 기록하기';
+    }
+    return;
+  }
+
   const del = e.target.closest('.mini-delete');
   if(del){
+    const isReply = del.dataset.type === 'reply';
+    const defaultLabel = del.dataset.label || '삭제하기';
     if(!del.classList.contains('confirming')){
       del.classList.add('confirming');
-      del.textContent = '정말 삭제할까요?';
+      del.textContent = '정말요?';
       clearTimeout(del._resetTimer);
       del._resetTimer = setTimeout(()=>{
         del.classList.remove('confirming');
-        del.textContent = '삭제하기';
+        del.textContent = defaultLabel;
       }, 3000);
       return;
     }
     clearTimeout(del._resetTimer);
     del.disabled = true;
     del.textContent = '삭제 중...';
-    const ok = await deleteEntry(Number(del.dataset.id));
+    const ok = isReply ? await deleteReply(Number(del.dataset.id)) : await deleteEntry(Number(del.dataset.id));
     if(ok){
       showToast('삭제했어요.');
-      closeModal();
-      loadEntries();
+      if(!isReply) closeModal();
+      await loadEntries();
+      if(currentModalBook) openBookModal(currentModalBook.title, currentModalBook.author);
     }else{
       del.disabled = false;
       del.classList.remove('confirming');
-      del.textContent = '삭제하기';
+      del.textContent = defaultLabel;
     }
+  }
+});
+
+document.body.addEventListener('keydown', (e)=>{
+  if(e.target.classList && e.target.classList.contains('reply-input') && e.key==='Enter'){
+    e.preventDefault();
+    e.target.closest('.reply-add').querySelector('.reply-submit').click();
   }
 });
 

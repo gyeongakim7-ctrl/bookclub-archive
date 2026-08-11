@@ -30,6 +30,53 @@ on entries for update
 using (true)
 with check (true);
 
+-- 리뷰에 남기는 공감/웃음 반응
+create table reactions (
+  id bigint generated always as identity primary key,
+  entry_id bigint not null references entries(id) on delete cascade,
+  reactor text not null,
+  emoji text not null,
+  created_at timestamptz default now(),
+  unique(entry_id, reactor, emoji)
+);
+
+alter table reactions enable row level security;
+
+create policy "누구나 읽기 가능"
+on reactions for select
+using (true);
+
+create policy "누구나 쓰기 가능"
+on reactions for insert
+with check (true);
+
+create policy "delete_own_reactions"
+on reactions for delete
+using (true);
+
+-- 리뷰에 남기는 답글(대댓글)
+create table replies (
+  id bigint generated always as identity primary key,
+  entry_id bigint not null references entries(id) on delete cascade,
+  replier text not null,
+  text text not null,
+  created_at timestamptz default now()
+);
+
+alter table replies enable row level security;
+
+create policy "누구나 읽기 가능"
+on replies for select
+using (true);
+
+create policy "누구나 쓰기 가능"
+on replies for insert
+with check (true);
+
+create policy "delete_own_replies"
+on replies for delete
+using (true);
+
 -- ======================================================
 -- 이미 entries 테이블이 있다면 (기존 서비스 운영 중이라면),
 -- 아래 내용만 SQL Editor에 추가로 붙여넣고 실행하세요.
@@ -61,3 +108,29 @@ alter table entries alter column rating type numeric(2,1) using rating::numeric(
 
 -- 리뷰 없이 별점/날짜만으로도 책을 등록할 수 있게 하려면 review 필수 제약을 풀어줘야 해요.
 alter table entries alter column review drop not null;
+
+-- 리뷰에 공감/웃음 반응, 답글 기능을 쓰려면 아래 두 테이블을 새로 만들어야 해요.
+create table if not exists reactions (
+  id bigint generated always as identity primary key,
+  entry_id bigint not null references entries(id) on delete cascade,
+  reactor text not null,
+  emoji text not null,
+  created_at timestamptz default now(),
+  unique(entry_id, reactor, emoji)
+);
+alter table reactions enable row level security;
+create policy "누구나 읽기 가능" on reactions for select using (true);
+create policy "누구나 쓰기 가능" on reactions for insert with check (true);
+create policy "delete_own_reactions" on reactions for delete using (true);
+
+create table if not exists replies (
+  id bigint generated always as identity primary key,
+  entry_id bigint not null references entries(id) on delete cascade,
+  replier text not null,
+  text text not null,
+  created_at timestamptz default now()
+);
+alter table replies enable row level security;
+create policy "누구나 읽기 가능" on replies for select using (true);
+create policy "누구나 쓰기 가능" on replies for insert with check (true);
+create policy "delete_own_replies" on replies for delete using (true);
