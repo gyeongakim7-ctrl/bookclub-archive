@@ -296,8 +296,15 @@ function saveMyName(name){
 }
 
 // ---------- 책 검색 (서버 프록시 /api/search-book 호출) ----------
-$('#searchInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') runSearch(); });
-$('#searchBtn').addEventListener('click', runSearch);
+let searchDebounceTimer = null;
+$('#searchInput').addEventListener('input', ()=>{
+  clearTimeout(searchDebounceTimer);
+  const q = $('#searchInput').value.trim();
+  if(!q){ $('#searchResults').innerHTML=''; return; }
+  searchDebounceTimer = setTimeout(runSearch, 400);
+});
+$('#searchInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ clearTimeout(searchDebounceTimer); runSearch(); } });
+$('#searchBtn').addEventListener('click', ()=>{ clearTimeout(searchDebounceTimer); runSearch(); });
 
 async function runSearch(){
   const q = $('#searchInput').value.trim();
@@ -307,6 +314,7 @@ async function runSearch(){
   try{
     const res = await fetch('/api/search-book?q=' + encodeURIComponent(q));
     const data = await res.json();
+    if($('#searchInput').value.trim() !== q) return;
     const items = data.items || [];
     if(items.length===0){
       box.innerHTML = '<p style="font-size:13px;color:var(--ink-soft);padding:6px;">검색 결과가 없어요. "직접 입력"을 이용해주세요.</p>';
@@ -326,6 +334,7 @@ async function runSearch(){
       box.appendChild(div);
     });
   }catch(e){
+    if($('#searchInput').value.trim() !== q) return;
     box.innerHTML = '<p style="font-size:13px;color:var(--danger);padding:6px;">검색 중 오류가 발생했어요. "직접 입력"으로 책을 추가해주세요.</p>';
   }
 }
