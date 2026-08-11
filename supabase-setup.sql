@@ -25,6 +25,11 @@ create policy "delete_own_entries"
 on entries for delete
 using (true);
 
+create policy "update_own_entries"
+on entries for update
+using (true)
+with check (true);
+
 -- ======================================================
 -- 이미 entries 테이블이 있다면 (기존 서비스 운영 중이라면),
 -- 아래 내용만 SQL Editor에 추가로 붙여넣고 실행하세요.
@@ -42,3 +47,11 @@ alter table entries add column if not exists read_date date;
 create policy "delete_own_entries"
 on entries for delete
 using (true);
+
+-- "수정하기" 기능을 쓰려면 수정(update) 권한도 열어줘야 해요. 삭제 정책과 같은 이유로,
+-- 이것도 "이름이 같으면 고칠 수 있다"를 DB가 강제하는 게 아니라 앱 UI에서만 막는 거예요.
+-- drop policy "update_own_entries" on entries;
+create policy "update_own_entries"
+on entries for update
+using (true)
+with check (true);

@@ -103,9 +103,19 @@
   .feed-date{font-size:11.5px; color:#C2A99C;}
   .feed-stars{color:var(--gold); font-size:14px; margin:4px 0 6px;}
   .feed-review{font-size:14px; line-height:1.65; color:#4A3D36; white-space:pre-wrap;}
-  .mini-delete{display:inline-block; margin-top:10px; background:transparent; color:var(--danger); border:1.5px solid #FFD9D3; font-size:11.5px; font-weight:700; padding:5px 12px;}
+  .review-actions{display:flex; gap:8px; margin-top:10px;}
+  .mini-delete, .mini-edit{display:inline-block; background:transparent; font-size:11.5px; font-weight:700; padding:5px 12px; border:1.5px solid #FFD9D3;}
+  .mini-delete{color:var(--danger);}
   .mini-delete:hover{background:#FFF1EF;}
   .mini-delete.confirming{background:var(--danger); color:#fff; border-color:var(--danger);}
+  .mini-edit{color:var(--coral-dark); border-color:var(--paper-dark);}
+  .mini-edit:hover{background:#FFF3EF;}
+  .edit-form{margin-top:10px; padding:14px; background:#FFF7F4; border-radius:14px; border:1.5px solid var(--paper-dark);}
+  .edit-form .stars{margin-bottom:10px;}
+  .edit-form input[type=date]{width:auto; margin-bottom:10px;}
+  .edit-form textarea{margin-bottom:10px;}
+  .edit-actions{display:flex; gap:8px;}
+  .edit-actions button{padding:8px 16px; font-size:13px;}
   .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
   .empty b{display:block; font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:18px; color:var(--ink); margin-bottom:6px;}
   .modal-back{position:fixed; inset:0; background:rgba(58,46,42,.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
@@ -225,6 +235,8 @@ const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
 let entries = [];
 let pickedBook = null;
 let starValue = 0;
+let editingId = null;
+let currentModalBook = null;
 
 function showToast(msg){
   const t = $('#toast');
@@ -260,6 +272,16 @@ async function deleteEntry(id){
   if(error){
     console.error(error);
     showToast('삭제 중 오류가 발생했어요: ' + error.message);
+    return false;
+  }
+  return true;
+}
+
+async function updateEntry(id, fields){
+  const { error } = await sb.from('entries').update(fields).eq('id', id);
+  if(error){
+    console.error(error);
+    showToast('수정 중 오류가 발생했어요: ' + error.message);
     return false;
   }
   return true;
@@ -509,6 +531,29 @@ function renderMyShelf(){
   renderShelfInto(el, mine, `${escapeHtml(myName)}님의 서재가 비어있어요`, '책을 기록하면 여기서 모아볼 수 있어요.');
 }
 
+function editFormHtml(e){
+  const stars = [1,2,3,4,5].map(v=>`<span data-v="${v}" class="${v<=e.rating?'on':''}">★</span>`).join('');
+  const dateVal = e.read_date || (e.created_at||'').slice(0,10);
+  return `
+    <div class="edit-form" data-id="${e.id}">
+      <div class="stars edit-stars">${stars}</div>
+      <input type="date" class="edit-date" value="${dateVal}">
+      <textarea class="edit-review">${escapeHtml(e.review)}</textarea>
+      <div class="edit-actions">
+        <button class="btn-primary save-edit" data-id="${e.id}">저장</button>
+        <button class="btn-ghost cancel-edit" data-id="${e.id}">취소</button>
+      </div>
+    </div>`;
+}
+
+function reviewControlsHtml(e, isMine){
+  if(!isMine) return '';
+  return `<div class="review-actions">
+    <button class="mini-edit" data-id="${e.id}">수정하기</button>
+    <button class="mini-delete" data-id="${e.id}">삭제하기</button>
+  </div>`;
+}
+
 function renderFeed(){
   const el = $('#feedView');
   const myName = ($('#nameInput').value || '').trim();
@@ -521,6 +566,7 @@ function renderFeed(){
     const d = new Date(e.created_at);
     const dateStr = `${d.getMonth()+1}월 ${d.getDate()}일`;
     const isMine = myName && e.reviewer.trim()===myName;
+    const editing = editingId === e.id;
     return `
       <div class="feed-item">
         ${e.thumbnail ? `<img class="feed-cover" src="${e.thumbnail}">` : `<div class="feed-cover"></div>`}
@@ -531,9 +577,11 @@ function renderFeed(){
           </div>
           <p class="feed-author">${escapeHtml(e.author||'')}</p>
           <p class="feed-reviewer reviewer-link" data-reviewer="${escapeHtml(e.reviewer)}">${escapeHtml(e.reviewer)}</p>
-          <p class="feed-stars">${'★'.repeat(e.rating)}${'☆'.repeat(5-e.rating)}</p>
-          <p class="feed-review">${escapeHtml(e.review)}</p>
-          ${isMine ? `<button class="mini-delete" data-id="${e.id}">삭제하기</button>` : ''}
+          ${editing ? editFormHtml(e) : `
+            <p class="feed-stars">${'★'.repeat(e.rating)}${'☆'.repeat(5-e.rating)}</p>
+            <p class="feed-review">${escapeHtml(e.review)}</p>
+            ${reviewControlsHtml(e, isMine)}
+          `}
         </div>
       </div>`;
   }).join('')}</div>`;
@@ -542,6 +590,7 @@ function renderFeed(){
 function openBookModal(title, author){
   const related = entries.filter(e=>e.title.trim().toLowerCase()===title.trim().toLowerCase() && (e.author||'').trim().toLowerCase()===author.trim().toLowerCase());
   if(related.length===0) return;
+  currentModalBook = {title, author};
   const myName = ($('#nameInput').value || '').trim();
   const avg = (related.reduce((s,r)=>s+r.rating,0)/related.length).toFixed(1);
   const thumb = related[0].thumbnail;
@@ -557,12 +606,15 @@ function openBookModal(title, author){
     </div>
     <div>${related.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(r=>{
       const isMine = myName && r.reviewer.trim()===myName;
+      const editing = editingId === r.id;
       return `
       <div class="modal-review">
         <div class="mr-top"><b class="reviewer-link" data-reviewer="${escapeHtml(r.reviewer)}">${escapeHtml(r.reviewer)}</b><span>${new Date(r.created_at).getMonth()+1}월 ${new Date(r.created_at).getDate()}일</span></div>
-        <div class="mr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
-        <div class="mr-text">${escapeHtml(r.review)}</div>
-        ${isMine ? `<button class="mini-delete" data-id="${r.id}">삭제하기</button>` : ''}
+        ${editing ? editFormHtml(r) : `
+          <div class="mr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+          <div class="mr-text">${escapeHtml(r.review)}</div>
+          ${reviewControlsHtml(r, isMine)}
+        `}
       </div>`;
     }).join('')}
     </div>
@@ -571,6 +623,7 @@ function openBookModal(title, author){
   $('#closeModal').addEventListener('click', closeModal);
 }
 function openReviewerModal(name){
+  currentModalBook = null;
   const mine = entries.filter(e=>e.reviewer.trim()===name.trim());
   if(mine.length===0) return;
   const bookCount = groupByBook(mine).length;
@@ -589,11 +642,61 @@ function openReviewerModal(name){
   $('#closeModal').addEventListener('click', closeModal);
 }
 
-function closeModal(){ $('#modalBack').classList.remove('open'); }
+function closeModal(){ $('#modalBack').classList.remove('open'); currentModalBook = null; editingId = null; }
 $('#modalBack').addEventListener('click', (e)=>{ if(e.target.id==='modalBack') closeModal(); });
+
+function refreshViews(){
+  if(currentModalBook) openBookModal(currentModalBook.title, currentModalBook.author);
+  render();
+}
+
 document.body.addEventListener('click', async (e)=>{
   const link = e.target.closest('.reviewer-link');
   if(link){ openReviewerModal(link.dataset.reviewer); return; }
+
+  const editStar = e.target.closest('.edit-stars span');
+  if(editStar){
+    const val = parseInt(editStar.dataset.v);
+    Array.from(editStar.parentElement.children).forEach(el=>el.classList.toggle('on', parseInt(el.dataset.v)<=val));
+    return;
+  }
+
+  const editBtn = e.target.closest('.mini-edit');
+  if(editBtn){
+    editingId = Number(editBtn.dataset.id);
+    refreshViews();
+    return;
+  }
+
+  const cancelBtn = e.target.closest('.cancel-edit');
+  if(cancelBtn){
+    editingId = null;
+    refreshViews();
+    return;
+  }
+
+  const saveBtn = e.target.closest('.save-edit');
+  if(saveBtn){
+    const id = Number(saveBtn.dataset.id);
+    const form = saveBtn.closest('.edit-form');
+    const rating = form.querySelectorAll('.edit-stars span.on').length;
+    const read_date = form.querySelector('.edit-date').value;
+    const review = form.querySelector('.edit-review').value.trim();
+    if(!rating || !read_date || !review){ showToast('별점, 날짜, 리뷰를 모두 입력해주세요.'); return; }
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중...';
+    const ok = await updateEntry(id, { rating, read_date, review });
+    if(ok){
+      editingId = null;
+      showToast('수정했어요.');
+      await loadEntries();
+      if(currentModalBook) openBookModal(currentModalBook.title, currentModalBook.author);
+    }else{
+      saveBtn.disabled = false;
+      saveBtn.textContent = '저장';
+    }
+    return;
+  }
 
   const del = e.target.closest('.mini-delete');
   if(del){
