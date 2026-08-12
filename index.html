@@ -121,14 +121,17 @@
   .edit-form textarea{margin-bottom:10px;}
   .edit-actions{display:flex; gap:8px;}
   .edit-actions button{padding:8px 16px; font-size:13px;}
-  .add-review{margin-top:18px; padding-top:18px; border-top:1.5px dashed var(--paper-dark);}
+  .modal-footer{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:10px 14px; margin-top:18px; padding-top:14px; border-top:1.5px dashed var(--paper-dark); position:sticky; bottom:0; background:#fff;}
+  .modal-footer-actions{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start;}
+  .modal-footer-actions .review-actions{margin-top:0;}
+  .add-review{flex:1 1 100%; margin-top:4px;}
   .add-review-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
   .add-review-title{font-weight:800; font-size:14px; margin:0; color:var(--ink);}
   .add-review-head .btn-ghost{padding:6px 14px; font-size:12px;}
   .add-review input[type=text], .add-review input[type=date]{margin-bottom:10px;}
   .add-review textarea{margin-bottom:10px; min-height:60px;}
   .add-review .star-input{margin-bottom:10px;}
-  .my-review-fab-wrap{position:sticky; bottom:0; display:flex; justify-content:flex-end; margin-top:18px; padding-top:14px;}
+  .my-review-fab-wrap{display:flex; justify-content:flex-end; margin-left:auto;}
   .my-review-fab-wrap .my-review-toggle{box-shadow:0 8px 20px rgba(255,107,133,.4);}
   .reaction-row{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
   .reaction-btn{background:#fff; border:1.5px solid var(--paper-dark); color:var(--ink-soft); font-size:12.5px; font-weight:700; padding:5px 11px; border-radius:999px;}
@@ -765,12 +768,14 @@ function openBookModal(title, author){
           ${r.review ? `<div class="mr-text">${escapeHtml(r.review)}</div>` : ''}
           ${reactionsHtml(r.id)}
           ${repliesHtml(r.id)}
-          ${reviewControlsHtml(r, isMine)}
         `}
       </div>`;
     }).join('')}
     </div>
-    ${myReviewSectionHtml()}
+    <div class="modal-footer">
+      <div class="modal-footer-actions">${related.filter(r=>myName && r.reviewer.trim()===myName).map(r=>reviewControlsHtml(r, true)).join('')}</div>
+      ${myReviewSectionHtml()}
+    </div>
   `;
   $('#modalBack').classList.add('open');
   $('#closeModal').addEventListener('click', closeModal);
