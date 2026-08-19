@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>대북클럽</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="대북클럽">
+<meta name="theme-color" content="#FF8FA3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -766,6 +772,7 @@ function openBookModal(title, author){
         ${editing ? editFormHtml(r) : `
           <div class="mr-stars">${starsDisplayHtml(r.rating)}</div>
           ${r.review ? `<div class="mr-text">${escapeHtml(r.review)}</div>` : ''}
+          ${reviewControlsHtml(r, isMine)}
           ${reactionsHtml(r.id)}
           ${repliesHtml(r.id)}
         `}
@@ -773,7 +780,6 @@ function openBookModal(title, author){
     }).join('')}
     </div>
     <div class="modal-footer">
-      <div class="modal-footer-actions">${related.filter(r=>myName && r.reviewer.trim()===myName).map(r=>reviewControlsHtml(r, true)).join('')}</div>
       ${myReviewSectionHtml()}
     </div>
   `;
