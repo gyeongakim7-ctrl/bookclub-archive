@@ -108,8 +108,10 @@
   .shelf-row-wrap{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; margin:0 -4px; padding:0 4px 4px;}
   .shelf-row-wrap::-webkit-scrollbar{display:none;}
   .shelf-row{display:flex; align-items:flex-end; gap:18px; padding:8px 6px 16px; position:relative; width:max-content; min-width:100%; border-bottom:1.5px solid var(--paper-dark);}
-  .shelf-scrollbar{height:4px; background:var(--paper-dark); border-radius:99px; margin:10px 6px 0; position:relative; overflow:hidden;}
-  .shelf-scrollbar-thumb{position:absolute; top:0; left:0; height:100%; width:30%; background:var(--coral); border-radius:99px;}
+  .shelf-scrollbar{height:14px; margin:6px 6px 0; position:relative; display:flex; align-items:center; touch-action:none; cursor:pointer;}
+  .shelf-scrollbar::before{content:""; position:absolute; left:0; right:0; top:50%; height:4px; transform:translateY(-50%); background:var(--paper-dark); border-radius:99px;}
+  .shelf-scrollbar-thumb{position:absolute; top:50%; left:0; height:6px; width:30%; transform:translateY(-50%); background:var(--coral); border-radius:99px; cursor:grab; touch-action:none;}
+  .shelf-scrollbar-thumb:active{cursor:grabbing; background:var(--coral-dark);}
   .shelf-book{cursor:pointer; width:132px; flex-shrink:0; position:relative; z-index:1;}
   .shelf-cover{width:100%; aspect-ratio:2/3; border-radius:12px; overflow:hidden; background:var(--paper-dark); box-shadow:0 10px 18px rgba(255,143,163,.22); position:relative; margin-bottom:8px; transition:transform .15s ease;}
   .shelf-book:hover .shelf-cover{transform:translateY(-6px) rotate(-1deg);}
@@ -640,21 +642,57 @@ function bindShelfScrollbar(rowId){
   if(!wrap || !bar) return;
   const row = wrap.querySelector('.shelf-row');
   const thumb = bar.querySelector('.shelf-scrollbar-thumb');
+
   function update(){
     const viewW = wrap.clientWidth;
     const contentW = row.scrollWidth;
     if(contentW <= viewW + 1){ bar.style.display = 'none'; return; }
-    bar.style.display = 'block';
+    bar.style.display = 'flex';
     const trackW = bar.clientWidth;
     const thumbW = Math.max(28, (viewW / contentW) * trackW);
     thumb.style.width = thumbW + 'px';
     const maxScroll = contentW - viewW;
     const ratio = maxScroll > 0 ? wrap.scrollLeft / maxScroll : 0;
-    thumb.style.transform = `translateX(${ratio * (trackW - thumbW)}px)`;
+    thumb.style.transform = `translateY(-50%) translateX(${ratio * (trackW - thumbW)}px)`;
   }
   wrap.addEventListener('scroll', update);
   window.addEventListener('resize', update);
   update();
+
+  function scrollToTrackX(clientX){
+    const rect = bar.getBoundingClientRect();
+    const trackW = bar.clientWidth;
+    const thumbW = thumb.offsetWidth;
+    const usable = trackW - thumbW;
+    const x = Math.min(Math.max(clientX - rect.left - thumbW/2, 0), usable);
+    const maxScroll = row.scrollWidth - wrap.clientWidth;
+    wrap.scrollLeft = usable > 0 ? (x / usable) * maxScroll : 0;
+  }
+
+  let dragging = false, dragStartX = 0, dragStartScroll = 0;
+  thumb.addEventListener('pointerdown', (e)=>{
+    dragging = true;
+    dragStartX = e.clientX;
+    dragStartScroll = wrap.scrollLeft;
+    thumb.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  thumb.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    const trackW = bar.clientWidth;
+    const thumbW = thumb.offsetWidth;
+    const usable = trackW - thumbW;
+    const maxScroll = row.scrollWidth - wrap.clientWidth;
+    const dx = e.clientX - dragStartX;
+    wrap.scrollLeft = dragStartScroll + (usable > 0 ? (dx / usable) * maxScroll : 0);
+  });
+  thumb.addEventListener('pointerup', ()=>{ dragging = false; });
+  thumb.addEventListener('pointercancel', ()=>{ dragging = false; });
+  bar.addEventListener('pointerdown', (e)=>{
+    if(e.target === thumb) return;
+    scrollToTrackX(e.clientX);
+  });
 }
 
 function render(){ renderStats(); renderHonors(); renderShelf(); renderFeed(); renderMyShelf(); }
