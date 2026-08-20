@@ -48,6 +48,17 @@
   .add-panel{padding:28px; margin-bottom:34px;}
   .add-panel h2{font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:20px; margin:0 0 4px; color:var(--ink);}
   .add-panel .hint{color:var(--ink-soft); font-size:13px; margin:0 0 18px;}
+  .honor-panel{padding:24px 28px; margin-bottom:34px;}
+  .honor-panel h2{font-family:'Noto Sans KR',sans-serif; font-weight:800; font-size:18px; margin:0 0 4px; color:var(--ink);}
+  .honor-panel .hint{color:var(--ink-soft); font-size:13px; margin:0 0 16px;}
+  .honor-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;}
+  .honor-card{background:linear-gradient(150deg,#FFF3EF,#FFF9F6); border:1.5px solid var(--paper-dark); border-radius:16px; padding:16px; text-align:center;}
+  .honor-emoji{font-size:26px; display:block; margin-bottom:6px;}
+  .honor-label{font-size:11px; font-weight:800; color:var(--coral-dark); text-transform:uppercase; letter-spacing:.04em; margin:0 0 8px;}
+  .honor-value{font-size:15px; font-weight:800; color:var(--ink); margin:0; line-height:1.35; cursor:pointer;}
+  .honor-value:hover{text-decoration:underline;}
+  .honor-sub{font-size:12px; color:var(--gold); font-weight:700; margin:4px 0 0;}
+  .honor-empty{font-size:12px; color:var(--ink-soft); margin:0; line-height:1.4;}
   .search-row{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
   input[type=text], input[type=search], input[type=date], textarea{font-family:'Noto Sans KR',sans-serif; border:1.5px solid var(--paper-dark); border-radius:14px; padding:12px 14px; font-size:14.5px; color:var(--ink); background:#FFFBF8; width:100%;}
   input:focus, textarea:focus{outline:2px solid var(--coral); outline-offset:1px; border-color:var(--coral);}
@@ -240,6 +251,12 @@
       <textarea id="reviewInput" placeholder="이 책에 대해 하고 싶은 이야기를 남겨주세요."></textarea>
     </div>
     <button class="btn-primary" id="submitBtn" disabled>서재에 기록하기</button>
+  </div>
+
+  <div class="panel honor-panel">
+    <h2>🏆 명예의 전당</h2>
+    <p class="hint">이번 달과 그동안의 기록을 모아봤어요.</p>
+    <div class="honor-grid" id="honorRow"></div>
   </div>
 
   <div class="tabs">
@@ -596,7 +613,7 @@ function renderShelfInto(el, list, emptyTitle, emptyBody){
   });
 }
 
-function render(){ renderStats(); renderShelf(); renderFeed(); renderMyShelf(); }
+function render(){ renderStats(); renderHonors(); renderShelf(); renderFeed(); renderMyShelf(); }
 
 function renderStats(){
   const books = groupByBook(entries);
@@ -607,6 +624,75 @@ function renderStats(){
     <div class="stat"><b>${entries.length}</b><span>남긴 리뷰</span></div>
     <div class="stat"><b>${reviewers.size}</b><span>참여 멤버</span></div>
     <div class="stat"><b>${avg}</b><span>평균 별점</span></div>
+  `;
+}
+
+function renderHonors(){
+  const el = $('#honorRow');
+  if(!el) return;
+  if(entries.length === 0){
+    el.innerHTML = `<div class="honor-card"><span class="honor-emoji">📖</span><p class="honor-empty">첫 책을 기록하면 여기에 기록이 쌓여요.</p></div>`;
+    return;
+  }
+
+  const now = new Date();
+  const monthEntries = entries.filter(e=>{
+    const d = new Date(e.created_at);
+    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  });
+  const reviewerCounts = {};
+  monthEntries.forEach(e=>{
+    const n = e.reviewer.trim();
+    reviewerCounts[n] = (reviewerCounts[n]||0) + 1;
+  });
+  const reviewKing = Object.entries(reviewerCounts).sort((a,b)=>b[1]-a[1])[0];
+
+  const books = groupByBook(entries);
+  const mostReviewed = [...books].sort((a,b)=>b.reviews.length-a.reviews.length)[0];
+
+  const topRated = books
+    .filter(b=>b.reviews.length>=2)
+    .map(b=>({ ...b, avg: b.reviews.reduce((s,r)=>s+r.rating,0)/b.reviews.length }))
+    .sort((a,b)=>b.avg-a.avg)[0];
+
+  const reactionCounts = {};
+  reactions.forEach(r=>{
+    const entry = entries.find(e=>e.id===r.entry_id);
+    if(!entry) return;
+    const n = entry.reviewer.trim();
+    reactionCounts[n] = (reactionCounts[n]||0) + 1;
+  });
+  const reactionKing = Object.entries(reactionCounts).sort((a,b)=>b[1]-a[1])[0];
+
+  el.innerHTML = `
+    <div class="honor-card">
+      <span class="honor-emoji">👑</span>
+      <p class="honor-label">이달의 리뷰왕</p>
+      ${reviewKing
+        ? `<p class="honor-value reviewer-link" data-reviewer="${escapeHtml(reviewKing[0])}">${escapeHtml(reviewKing[0])}</p><p class="honor-sub">리뷰 ${reviewKing[1]}개</p>`
+        : `<p class="honor-empty">이번 달 리뷰가 아직 없어요</p>`}
+    </div>
+    <div class="honor-card">
+      <span class="honor-emoji">📚</span>
+      <p class="honor-label">최다 리뷰 도서</p>
+      ${mostReviewed
+        ? `<p class="honor-value honor-book-link" data-title="${escapeHtml(mostReviewed.title)}" data-author="${escapeHtml(mostReviewed.author||'')}">${escapeHtml(mostReviewed.title)}</p><p class="honor-sub">리뷰 ${mostReviewed.reviews.length}개</p>`
+        : ''}
+    </div>
+    <div class="honor-card">
+      <span class="honor-emoji">⭐</span>
+      <p class="honor-label">최고 평점 도서</p>
+      ${topRated
+        ? `<p class="honor-value honor-book-link" data-title="${escapeHtml(topRated.title)}" data-author="${escapeHtml(topRated.author||'')}">${escapeHtml(topRated.title)}</p><p class="honor-sub">★ ${topRated.avg.toFixed(1)} · ${topRated.reviews.length}명</p>`
+        : `<p class="honor-empty">2명 이상 리뷰한 책이 아직 없어요</p>`}
+    </div>
+    <div class="honor-card">
+      <span class="honor-emoji">💖</span>
+      <p class="honor-label">반응왕</p>
+      ${reactionKing
+        ? `<p class="honor-value reviewer-link" data-reviewer="${escapeHtml(reactionKing[0])}">${escapeHtml(reactionKing[0])}</p><p class="honor-sub">받은 반응 ${reactionKing[1]}개</p>`
+        : `<p class="honor-empty">아직 반응이 없어요</p>`}
+    </div>
   `;
 }
 
@@ -817,6 +903,9 @@ function refreshViews(){
 document.body.addEventListener('click', async (e)=>{
   const link = e.target.closest('.reviewer-link');
   if(link){ openReviewerModal(link.dataset.reviewer); return; }
+
+  const bookLink = e.target.closest('.honor-book-link');
+  if(bookLink){ openBookModal(bookLink.dataset.title, bookLink.dataset.author); return; }
 
   const starHit = e.target.closest('.star-input-hits span');
   if(starHit){
