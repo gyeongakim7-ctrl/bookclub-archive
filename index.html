@@ -253,21 +253,20 @@
     <button class="btn-primary" id="submitBtn" disabled>서재에 기록하기</button>
   </div>
 
-  <div class="panel honor-panel">
-    <h2>🏆 명예의 전당</h2>
-    <p class="hint">이번 달과 그동안의 기록을 모아봤어요.</p>
-    <div class="honor-grid" id="honorRow"></div>
-  </div>
-
   <div class="tabs">
     <button class="tab active" data-tab="shelf">📚 책장</button>
     <button class="tab" data-tab="feed">🕒 최신 피드</button>
     <button class="tab" data-tab="myshelf">🙋 내 서재</button>
+    <button class="tab" data-tab="honor">🏆 명예의 전당</button>
   </div>
 
   <div id="shelfView"></div>
   <div id="feedView" style="display:none;"></div>
   <div id="myShelfView" style="display:none;"></div>
+  <div id="honorView" class="panel honor-panel" style="display:none;">
+    <p class="hint">이번 달과 그동안의 기록을 모아봤어요.</p>
+    <div class="honor-grid" id="honorRow"></div>
+  </div>
 
 </div>
 
@@ -548,6 +547,7 @@ $$('.tab').forEach(t=>{
     $('#shelfView').style.display = tab==='shelf' ? 'block':'none';
     $('#feedView').style.display = tab==='feed' ? 'block':'none';
     $('#myShelfView').style.display = tab==='myshelf' ? 'block':'none';
+    $('#honorView').style.display = tab==='honor' ? 'block':'none';
     if(tab==='myshelf') renderMyShelf();
   });
 });
