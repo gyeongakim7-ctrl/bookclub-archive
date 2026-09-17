@@ -134,3 +134,31 @@ alter table replies enable row level security;
 create policy "누구나 읽기 가능" on replies for select using (true);
 create policy "누구나 쓰기 가능" on replies for insert with check (true);
 create policy "delete_own_replies" on replies for delete using (true);
+
+-- 이달의 모임 날짜 투표/확정 기능. month는 'YYYY-MM' 형식으로 후보를 해당 월로 묶어줘요.
+create table if not exists meetup_polls (
+  id bigint generated always as identity primary key,
+  month text not null,
+  candidate_date date not null,
+  proposer text not null,
+  confirmed boolean not null default false,
+  created_at timestamptz default now(),
+  unique(month, candidate_date)
+);
+alter table meetup_polls enable row level security;
+create policy "누구나 읽기 가능" on meetup_polls for select using (true);
+create policy "누구나 쓰기 가능" on meetup_polls for insert with check (true);
+create policy "meetup_polls_update" on meetup_polls for update using (true) with check (true);
+create policy "meetup_polls_delete" on meetup_polls for delete using (true);
+
+create table if not exists meetup_votes (
+  id bigint generated always as identity primary key,
+  poll_id bigint not null references meetup_polls(id) on delete cascade,
+  voter text not null,
+  created_at timestamptz default now(),
+  unique(poll_id, voter)
+);
+alter table meetup_votes enable row level security;
+create policy "누구나 읽기 가능" on meetup_votes for select using (true);
+create policy "누구나 쓰기 가능" on meetup_votes for insert with check (true);
+create policy "meetup_votes_delete" on meetup_votes for delete using (true);
