@@ -74,6 +74,8 @@
   .meetup-row-actions{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
   .meetup-vote-btn{background:#fff; border:1.5px solid var(--paper-dark); color:var(--ink-soft); font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:999px;}
   .meetup-vote-btn.active{background:linear-gradient(135deg,var(--coral),var(--coral-dark)); color:#fff; border-color:transparent;}
+  .meetup-voters{flex-basis:100%; display:flex; flex-wrap:wrap; gap:5px;}
+  .meetup-voter{font-size:11.5px; font-weight:700; color:var(--coral-dark); background:#FFE9E4; padding:3px 10px; border-radius:999px;}
   .meetup-confirm-btn{font-size:12px; padding:6px 12px;}
   .meetup-unconfirm{font-size:12px; padding:6px 12px;}
   .meetup-empty{color:var(--ink-soft); font-size:13px; text-align:center; padding:20px 0;}
@@ -719,6 +721,7 @@ function renderMeetup(){
             ${!c.confirmed ? `<button class="btn-ghost meetup-confirm-btn" data-id="${c.id}" data-month="${month}">확정하기</button>` : ''}
             ${isMine ? `<button class="mini-delete" data-type="meetup" data-label="삭제" data-id="${c.id}">삭제</button>` : ''}
           </div>
+          ${c.votes.length ? `<div class="meetup-voters">${c.votes.map(v=>`<span class="meetup-voter">${escapeHtml(v.voter.trim())}</span>`).join('')}</div>` : ''}
         </div>`;
       }).join('')}
     </div>
