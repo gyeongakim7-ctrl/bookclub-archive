@@ -689,7 +689,7 @@ function renderMeetup(){
   const candidates = meetupPolls.filter(p=>p.month===month).map(p=>({
     ...p,
     votes: meetupVotes.filter(v=>v.poll_id===p.id)
-  })).sort((a,b)=> b.votes.length - a.votes.length || new Date(a.candidate_date) - new Date(b.candidate_date));
+  })).sort((a,b)=> a.candidate_date.localeCompare(b.candidate_date));
 
   const confirmed = candidates.find(c=>c.confirmed);
 
