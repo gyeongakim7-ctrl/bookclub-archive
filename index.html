@@ -74,6 +74,10 @@
   .meetup-row-actions{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
   .meetup-vote-btn{background:#fff; border:1.5px solid var(--paper-dark); color:var(--ink-soft); font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:999px;}
   .meetup-vote-btn.active{background:linear-gradient(135deg,var(--coral),var(--coral-dark)); color:#fff; border-color:transparent;}
+  .meetup-banner{display:none; align-items:center; gap:10px; flex-wrap:wrap; max-width:560px; margin:14px 0 0; padding:12px 16px; border-radius:14px; background:linear-gradient(135deg,var(--coral),var(--coral-dark)); color:#fff; box-shadow:0 6px 16px rgba(255,107,133,.28); cursor:pointer; font-size:14px; font-weight:800;}
+  .meetup-banner.show{display:flex;}
+  .meetup-banner-date{font-size:16px; font-weight:900;}
+  .meetup-banner-dday{margin-left:auto; background:rgba(255,255,255,.25); padding:3px 10px; border-radius:999px; font-size:12px;}
   .meetup-voters{flex-basis:100%; display:flex; flex-wrap:wrap; gap:5px;}
   .meetup-voter{font-size:11.5px; font-weight:700; color:var(--coral-dark); background:#FFE9E4; padding:3px 10px; border-radius:999px;}
   .meetup-confirm-btn{font-size:12px; padding:6px 12px;}
@@ -231,6 +235,7 @@
     <h1>대북클럽</h1>
     <p class="sub">매달 한 번, 스쳐 지나가던 책 소개를 여기에 쌓아둡니다. 내가 읽은 책, 별점, 한 줄 이상의 생각을 남기고 서로의 서재를 구경하세요.</p>
     <p class="notice">📢주의📢 이름은 별명, 실명 다 가능합니다. 다만, 꼭! 한 개로 통일해 주세요. 이름을 기준으로 내 서재 및 수정이 가능합니다.</p>
+    <div class="meetup-banner" id="meetupBanner"></div>
     <div class="stat-row" id="statRow"></div>
   </div>
 </header>
@@ -684,6 +689,16 @@ function meetupCalendarHtml(now, candidates){
   const weekdays = ['일','월','화','수','목','금','토'].map(w=>`<div class="meetup-cal-weekday">${w}</div>`).join('');
   return `<div class="meetup-cal"><div class="meetup-cal-grid">${weekdays}${cells.join('')}</div></div>`;
 }
+function renderMeetupBanner(confirmed, now){
+  const b = $('#meetupBanner');
+  if(!b) return;
+  if(!confirmed){ b.classList.remove('show'); b.innerHTML = ''; return; }
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((new Date(confirmed.candidate_date + 'T00:00:00') - today) / 86400000);
+  const dday = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-DAY' : '종료';
+  b.innerHTML = `<span>📌 ${now.getMonth()+1}월 모임</span><span class="meetup-banner-date">${formatMeetupDate(confirmed.candidate_date)}</span><span class="meetup-banner-dday">${dday}</span>`;
+  b.classList.add('show');
+}
 function renderMeetup(){
   const el = $('#meetupView');
   if(!el) return;
@@ -698,6 +713,7 @@ function renderMeetup(){
   })).sort((a,b)=> a.candidate_date.localeCompare(b.candidate_date));
 
   const confirmed = candidates.find(c=>c.confirmed);
+  renderMeetupBanner(confirmed, now);
 
   el.innerHTML = `
     <h2>🗓️ ${monthLabel} 모임 날짜</h2>
@@ -1390,6 +1406,8 @@ document.body.addEventListener('keydown', (e)=>{
     e.target.closest('.reply-add').querySelector('.reply-submit').click();
   }
 });
+
+$('#meetupBanner').addEventListener('click', ()=>{ document.querySelector('.tab[data-tab="meetup"]').click(); document.querySelector('.tabs').scrollIntoView({behavior:'smooth'}); });
 
 // ---------- 시작 ----------
 loadMyName();
