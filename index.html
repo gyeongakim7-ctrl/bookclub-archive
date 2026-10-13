@@ -396,7 +396,11 @@ async function loadMeetup(){
 
 async function addMeetupCandidate(month, dateStr, proposer){
   const { error } = await sb.from('meetup_polls').insert([{ month, candidate_date: dateStr, proposer }]);
-  if(error){ console.error(error); showToast('후보 등록 중 오류가 발생했어요: ' + error.message); return false; }
+  if(error){
+    console.error(error);
+    showToast(error.code === '23505' ? '이미 후보로 등록된 날짜예요. 아래 목록에서 투표해주세요!' : '후보 등록 중 오류가 발생했어요: ' + error.message);
+    return false;
+  }
   return true;
 }
 
